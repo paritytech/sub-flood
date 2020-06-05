@@ -9,9 +9,9 @@ function seedFromNum(seed: number): string {
 
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 60000;
+    let TOTAL_TRANSACTIONS = 30000;
     let TPS = 1500;
-    let TOTAL_THREADS = 8;
+    let TOTAL_THREADS = 4;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
