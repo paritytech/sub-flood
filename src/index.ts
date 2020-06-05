@@ -1,17 +1,35 @@
 import {Keyring} from "@polkadot/keyring";
 import {ApiPromise, WsProvider} from "@polkadot/api";
 import {KeyringPair} from "@polkadot/keyring/types";
+import { SignedBlock, BlockHash, BlockAttestations } from "@polkadot/types/interfaces";
 
 
 function seedFromNum(seed: number): string {
     return '//user//' + ("0000" + seed).slice(-4);
 }
 
+async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Promise<any> {
+    const signedBlock = hash ? await api.rpc.chain.getBlock(hash) : await api.rpc.chain.getBlock();
+
+    // the hash for each extrinsic in the block
+    let timestamp = signedBlock.block.extrinsics.find(
+        ({ method: { methodName, sectionName } }) => sectionName === 'timestamp' && methodName === 'set'
+    )!.method.args[0].toString();
+
+    let date = new Date(+timestamp);
+
+    return {
+        date,
+        transactions: signedBlock.block.extrinsics.length,
+        parent: signedBlock.block.header.parentHash,
+    }
+}
+
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 30000;
-    let TPS = 1500;
-    let TOTAL_THREADS = 4;
+    let TOTAL_TRANSACTIONS = 20000;
+    let TPS = 1000;
+    let TOTAL_THREADS = 10;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
@@ -93,6 +111,8 @@ async function run() {
             await new Promise(r => setTimeout(r, 5));
         }
 
+        nextTime = nextTime + 1000;
+
         console.log(`Staring batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
         for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
@@ -107,9 +127,24 @@ async function run() {
     }
 
     let finalTime = new Date();
+    let diff = finalTime.getTime() - initialTime.getTime();
 
+    var total_transactions = 0;
+    var total_blocks = 0;
+    var latest_block = await getBlockStats(api);
+    console.log(`latest block: ${latest_block.date}`);
+    console.log(`initial time: ${initialTime}`);
+    for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, latest_block.parent)) {
+        if (latest_block.date < finalTime) {
+            console.log(`block at ${latest_block.date}: ${latest_block.transactions} transactions`);
+            total_transactions  += latest_block.transactions;
+            total_blocks ++;
+        }
+    }
 
+    let tps = (total_transactions * 1000) / diff;
 
+    console.log(`TPS from ${total_blocks} blocks: ${tps}`)
 }
 
 run().then(function() {
