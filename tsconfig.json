@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "pretty": true,
+    "sourceMap": true,
+    "declaration": true,
+    "target": "es6",
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "profileExamples",
+    "dist"
+  ]
+}
