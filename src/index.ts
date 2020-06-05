@@ -9,8 +9,8 @@ function seedFromNum(seed: number): string {
 
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 12000;
-    let TPS = 2000;
+    let TOTAL_TRANSACTIONS = 60000;
+    let TPS = 1500;
     let TOTAL_THREADS = 8;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
@@ -85,6 +85,7 @@ async function run() {
     console.log(`Done pregenerating transactions (${sanityCounter}).`);
 
     let nextTime = new Date().getTime();
+    let initialTime = new Date();
 
     for (var batchNo = 0; batchNo < TOTAL_BATCHES; batchNo++) {
 
@@ -104,6 +105,11 @@ async function run() {
         }
         await Promise.all(batchPromises);
     }
+
+    let finalTime = new Date();
+
+
+
 }
 
 run().then(function() {
