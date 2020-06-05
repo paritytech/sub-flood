@@ -32,8 +32,8 @@ process.on('unhandledRejection', (reason, p) => {
 
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 20000;
-    let TPS = 1000;
+    let TOTAL_TRANSACTIONS = 12000;
+    let TPS = 1200;
     let TOTAL_THREADS = 10;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
