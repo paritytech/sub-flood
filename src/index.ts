@@ -25,6 +25,11 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
     }
 }
 
+process.on('unhandledRejection', (reason, p) => {
+    console.error('Unhandled Rejection at:', p, 'reason:', reason)
+    process.exit(1)
+});
+
 async function run() {
 
     let TOTAL_TRANSACTIONS = 20000;
