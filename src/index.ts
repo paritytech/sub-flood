@@ -25,14 +25,9 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
     }
 }
 
-process.on('unhandledRejection', (reason, p) => {
-    console.error('Unhandled Rejection at:', p, 'reason:', reason)
-    process.exit(1)
-});
-
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 12000;
+    let TOTAL_TRANSACTIONS = 48000;
     let TPS = 1200;
     let TOTAL_THREADS = 10;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
@@ -118,17 +113,28 @@ async function run() {
 
         nextTime = nextTime + 1000;
 
+        var errors = [];
+
         console.log(`Staring batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
         for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
             for (let transactionNo = 0; transactionNo < TRANSACTION_PER_BATCH; transactionNo++) {
-                batchPromises.push(new Promise<number>(async resolve => {
-                    let transaction = thread_payloads[threadNo][batchNo][transactionNo];
-                    resolve(await transaction.send());
-                }));
+                batchPromises.push(
+                    new Promise<number>(async resolve => {
+                        let transaction = thread_payloads[threadNo][batchNo][transactionNo];
+                        resolve(await transaction.send());
+                    }).catch(err => {
+                        errors.push(err)
+                        return -1;
+                    })
+                );
             }
         }
         await Promise.all(batchPromises);
+
+        if (errors.length > 0) {
+            console.log(`${errors.length}/${TRANSACTION_PER_BATCH} errors sending transactions`);
+        }
     }
 
     let finalTime = new Date();
