@@ -122,10 +122,10 @@ async function run() {
                 batchPromises.push(
                     new Promise<number>(async resolve => {
                         let transaction = thread_payloads[threadNo][batchNo][transactionNo];
-                        resolve(await transaction.send());
-                    }).catch(err => {
-                        errors.push(err)
-                        return -1;
+                        resolve(await transaction.send().catch((err: any) => {
+                            errors.push(err);
+                            return -1;
+                        }));
                     })
                 );
             }
