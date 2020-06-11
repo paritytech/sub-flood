@@ -111,7 +111,7 @@ async function run() {
                 nonces[userNo] ++;
                 let senderKeyPair = keyPairs.get(userNo)!;
 
-                let transfer = api.tx.templateModule.free_transfer(aliceKeyPair.address, TOKENS_TO_SEND);
+                let transfer = api.tx.templateModule.freeTransfer(aliceKeyPair.address, TOKENS_TO_SEND);
                 let signedTransaction = transfer.sign(senderKeyPair, {nonce});
 
                 batch.push(signedTransaction);
