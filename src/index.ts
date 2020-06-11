@@ -38,7 +38,9 @@ let customTypes = {
         "tx_count": "u32",
         "session_index": "u32"
     },
-    "TxCount": "u32"
+    "TxCount": "u32",
+    "Address": 'AccountId',
+    "LookupSource": 'AccountId'
 };
 
 async function run() {
