@@ -45,8 +45,8 @@ let customTypes = {
 
 async function run() {
 
-    let TOTAL_TRANSACTIONS = 48000;
-    let TPS = 1200;
+    let TOTAL_TRANSACTIONS = 25000;
+    let TPS = 100;
     let TOTAL_THREADS = 10;
     let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
@@ -184,6 +184,6 @@ run().then(function() {
     console.log("Done");
     process.exit(0);
 }).catch(function(err) {
-    console.log("Error: ", JSON.stringify(err));
+    console.log("Error: " + err.toString());
     process.exit(1);
 });
