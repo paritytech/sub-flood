@@ -25,6 +25,22 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
     }
 }
 
+let customTypes = {
+    "AccountData": {
+        "free": "Balance",
+        "reserved": "Balance",
+        "misc_frozen": "Balance",
+        "fee_frozen": "Balance",
+        "tx_count": "u32",
+        "session_index": "u32"
+    },
+    "TemplateAccountData": {
+        "tx_count": "u32",
+        "session_index": "u32"
+    },
+    "TxCount": "u32"
+};
+
 async function run() {
 
     let TOTAL_TRANSACTIONS = 48000;
@@ -40,7 +56,10 @@ async function run() {
 
     let provider = new WsProvider(WS_URL);
 
-    let api = await ApiPromise.create({provider});
+    let api = await ApiPromise.create({
+        provider: provider,
+        types: customTypes
+    });
 
     let keyring = new Keyring({type: 'sr25519'});
 
@@ -65,14 +84,15 @@ async function run() {
         let keypair = keyring.addFromUri(seedFromNum(seed));
         keyPairs.set(seed, keypair);
 
+        // mint balance to the user (this also activates the account)
         // should be greater than existential deposit.
-        let transfer = api.tx.balances.transfer(keypair.address, '100000000000000000');
+        let mint = api.tx.templateModule.mint(keypair.address, '100000000000000000');
 
         let receiverSeed = seedFromNum(seed);
         console.log(
             `Alice -> ${receiverSeed} (${keypair.address})`
         );
-        await transfer.signAndSend(aliceKeyPair, { nonce: aliceNonce });
+        await mint.signAndSend(aliceKeyPair, { nonce: aliceNonce });
         aliceNonce ++;
     }
     console.log("All users endowed from Alice account!");
@@ -89,7 +109,7 @@ async function run() {
                 nonces[userNo] ++;
                 let senderKeyPair = keyPairs.get(userNo)!;
 
-                let transfer = api.tx.balances.transfer(aliceKeyPair.address, TOKENS_TO_SEND);
+                let transfer = api.tx.templateModule.free_transfer(aliceKeyPair.address, TOKENS_TO_SEND);
                 let signedTransaction = transfer.sign(senderKeyPair, {nonce});
 
                 batch.push(signedTransaction);
