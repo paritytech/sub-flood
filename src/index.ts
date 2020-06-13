@@ -178,6 +178,19 @@ async function run() {
     let tps = (total_transactions * 1000) / diff;
 
     console.log(`TPS from ${total_blocks} blocks: ${tps}`)
+
+    console.log(`Removing Users...`)
+
+    for (let seed = 0; seed <= TOTAL_USERS; seed++) {
+        let keypair = keyring.addFromUri(seedFromNum(seed));
+        keyPairs.set(seed, keypair);
+
+        // deactivates account to keep the account list clean
+        let deactivateAccount = api.tx.templateModule.deactivateAccount(keypair.address);
+
+        await deactivateAccount.signAndSend(aliceKeyPair, { nonce: aliceNonce });
+        aliceNonce++;
+    }
 }
 
 run().then(function() {
