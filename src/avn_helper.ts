@@ -12,27 +12,30 @@ const MILLION = new BN(1_000000);
 const BASE_TOKEN = MILLION.mul(MILLION).mul(MILLION);
 const MICRO_BASE_TOKEN = MILLION.mul(MILLION);
 
-const US_EAST_URL = "wss://us-east-1.avntestnet.artos.io";
-const EU_WEST_URL = "wss://eu-west-1.avntestnet.artos.io";
+const EU_WEST_2_URL = "ws://ec2-18-132-203-154.eu-west-2.compute.amazonaws.com:9944";
 const LOCAL_NODE_URL = "ws://localhost:9944";
 
 const LOCAL_ALICE_SURI = '//Alice';
-const TESTNET_ALICE_SURI = 'right lonely error shoot slam fuel choose spider enforce intact jar bright';
+// const TESTNET_ALICE_SURI = 'right lonely error shoot slam fuel choose spider enforce intact jar bright';
+const TESTNET_ALICE_SURI = LOCAL_ALICE_SURI;
 
 function pk_to_string(publicKeyAsObj: any) {
     return u8aToHex(publicKeyAsObj);
 }
 
 async function next_token_nonce(api: ApiPromise, sender: any) {
-    let nonce = await api.query.tokenManager.nonces(sender.keys.address);
-    return new BN(nonce);
+    if (api.query.tokenManager) {
+        let nonce = await api.query.tokenManager.nonces(sender.keys.address);
+        return new BN(nonce);
+    } else {
+        return undefined;
+    }   
 }
 
 async function next_system_nonce(api: ApiPromise, account: any) {
     let account_data = await api.query.system.account(account.keys.address);
     return account_data.nonce.toNumber();
   }
-  
 
   const common_types = 
     {
@@ -206,7 +209,9 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
       "nonce" : sender.nonce.toNumber()
     }
   
+    console.log("Signer suri: ", sender.suri);
     let proof = await signData(data_to_sign, sender.suri);
+    console.log("Creating inner call");
   
     let inner_call = api.tx.tokenManager.signedTransfer(
       {signer: data_to_sign.from, relayer: data_to_sign.relayer, signature: {Sr25519: proof}},
@@ -215,6 +220,8 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
       data_to_sign.token,
       data_to_sign.amount);
   
+    console.log("Inner call done");
+
     return await api.tx
       .tokenManager
       .proxy(inner_call);
@@ -235,8 +242,9 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
       api = await initialiseAPI(LOCAL_NODE_URL);
       alice_suri = LOCAL_ALICE_SURI;
     } else {
-      api = await initialiseAPI(EU_WEST_URL);
-      alice_suri = TESTNET_ALICE_SURI;
+      api = await initialiseAPI(EU_WEST_2_URL);
+    //   alice_suri = TESTNET_ALICE_SURI;
+    alice_suri = LOCAL_ALICE_SURI;
     }
   
     let keyring = new Keyring({type: 'sr25519'});
@@ -285,7 +293,6 @@ async function build_account(api: ApiPromise, keyring: Keyring, suri: string) {
 
     return account;
 }  
-
 
 export {
     token_id,

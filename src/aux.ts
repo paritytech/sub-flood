@@ -1,5 +1,6 @@
 import {ApiPromise, WsProvider} from "@polkadot/api";
 import { SignedBlock, BlockHash, BlockAttestations } from "@polkadot/types/interfaces";
+import * as avn from "./avn_helper";
 
 function seedFromNum(seed: number): string {
     return '//user//' + ("0000" + seed).slice(-4);
@@ -27,13 +28,25 @@ async function getBlockStats(api: ApiPromise, event_section: string[], hash?: Bl
     }
 }
 
-async function endow_users(api: ApiPromise, alice: any, accounts: any[]) {
+async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type: any) {
     console.log("Endowing all users from Alice account...");
     for (let seed = 0; seed < accounts.length; seed++) {
         // should be greater than existential deposit.
         let receiver = accounts[seed];
-        let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
 
+        // Send non-AVT to receiver, so they can return it later
+        // if (tx_type === 'proxied') {
+        //     console.log("Proxied sending non-avt token to user");
+        //     console.log(`Alice nonce ${alice.nonce}`);
+        //     console.log(`Receiver nonce ${receiver.nonce}`);
+        //     let tx = await avn.prepare_proxied_transfer(api, alice, receiver, alice);
+        //     console.log("signing");
+        //     await tx.signAndSend(alice.keys, {nonce: alice.nonce});
+        //     alice.nonce++;
+        //     console.log("Signed and sent");
+        // }
+
+        let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
         console.log(
             `Alice -> ${receiver.suri} (${receiver.keys.address})`
         );
@@ -41,24 +54,7 @@ async function endow_users(api: ApiPromise, alice: any, accounts: any[]) {
         await transfer.signAndSend(alice.keys, { nonce: alice.system_nonce });
         alice.system_nonce ++;
     }
-
-
-    // for (let seed = 0; seed <= TOTAL_USERS; seed++) {
-    //     let keypair = context.keyring.addFromUri(seedFromNum(seed));
-    //     keyPairs.set(seed, keypair);
-
-    //     // should be greater than existential deposit.
-    //     let transfer = context.api.tx.balances.transfer(keypair.address, '1000000000000000');
-
-    //     let receiverSeed = seedFromNum(seed);
-    //     console.log(
-    //         `Alice -> ${receiverSeed} (${keypair.address})`
-    //     );
-    //     await transfer.signAndSend(aliceKeyPair, { nonce: aliceNonce });
-    //     aliceNonce ++;
-    // }
     console.log("All users endowed from Alice account!");
-    // return [aliceKeyPair, keyPairs];
 }
 
 
@@ -76,12 +72,19 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
                 let nonce = sender.system_nonce;
                 sender.system_nonce++;
                 
-                // let transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer);
+                let transfer;
+                let signedTransaction;
+                if (context.tx_type && context.tx_type === 'avt_transfer') {
+                    transfer = api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
+                    signedTransaction = transfer.sign(sender.keys, {nonce});    
+                } else if (context.tx_type && context.tx_type === 'proxied') {
+                    // let transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer); 
+                }
                 
-                let transfer = api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
-                let signedTransaction = transfer.sign(sender.keys, {nonce});
-
-                batch.push(signedTransaction);
+                // console.log(`Nonce for ${userNo}: ${nonce}`);
+                if (signedTransaction) {
+                    batch.push(signedTransaction);
+                }
 
                 sanityCounter++;
             }
@@ -98,12 +101,12 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
     for (var batchNo = 0; batchNo < global_params.TOTAL_BATCHES; batchNo++) {
 
         while (new Date().getTime() < nextTime) {
-            await new Promise(r => setTimeout(r, 5));
+            await sleep(5);
         }
 
         nextTime = nextTime + 1000;
 
-        var errors = [];
+        var errors: any = [];
 
         console.log(`Starting batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
@@ -124,6 +127,9 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
 
         if (errors.length > 0) {
             console.log(`${errors.length}/${global_params.TRANSACTION_PER_BATCH} errors sending transactions`);
+            for (let i = 0; i < Math.max(10, errors.length); i++) {
+                console.log(`Error: ${errors[i]}`);
+            }
         }
     }
 }

@@ -28,18 +28,23 @@ async function run() {
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
     let [api, keyring, alice_suri] = await avn.setup(options.local_network);
+
     let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
-    await aux.endow_users(api, alice, accounts);
+    await aux.endow_users(api, alice, accounts, options.tx_type);
 
     await aux.pending_transactions_cleared(api);
     console.log(".");
 
     let thread_payloads = await aux.pre_generate_tx(
       api, 
-      {alice, accounts}, 
+      {alice, accounts, tx_type: options.tx_type}, 
       global_params);
 
     let initialTime = new Date();
+
+    await aux.pending_transactions_cleared(api);
+    console.log("..");
+    console.log("Globals: %j", global_params);
 
     await aux.send_transactions(thread_payloads, global_params);
 
@@ -49,6 +54,8 @@ async function run() {
 
     await aux.report_substrate_diagnostics(api, initialTime, finalTime);  
 }
+
+// run();
 
 run().then(function() {
     console.log("Done");
