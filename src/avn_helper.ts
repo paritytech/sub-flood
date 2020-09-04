@@ -212,7 +212,6 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
     }
   
     let proof = await signData(data_to_sign, sender.suri);
-    console.log("Creating inner call");
   
     let inner_call = api.tx.tokenManager.signedTransfer(
       {signer: data_to_sign.from, relayer: data_to_sign.relayer, signature: {Sr25519: proof}},
@@ -221,7 +220,6 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
       data_to_sign.token,
       data_to_sign.amount);
   
-    console.log("Inner call done");
 
     return await api.tx
       .tokenManager
