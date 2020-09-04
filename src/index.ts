@@ -16,7 +16,6 @@ async function run() {
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
 
     let TOTAL_THREADS = 10;
-    let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
 
     let TOTAL_USERS = TPS;
@@ -38,9 +37,8 @@ async function run() {
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
     let [api, keyring, alice_suri] = await avn.setup(options.local_network);
-
     let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
-    await aux.endow_users(api, alice, accounts, options.tx_type);
+    await aux.endow_users(api, alice, accounts, options.tx_type, TOTAL_BATCHES);
 
     await aux.pending_transactions_cleared(api);
     console.log(".");
@@ -61,7 +59,7 @@ async function run() {
 
     let finalTime = new Date();
 
-    await aux.report_substrate_diagnostics(api, initialTime, finalTime);  
+    await aux.report_substrate_diagnostics(api, initialTime, finalTime, options.tx_type);  
 }
 
 // run();

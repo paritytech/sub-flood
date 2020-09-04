@@ -28,23 +28,27 @@ async function getBlockStats(api: ApiPromise, event_section: string[], hash?: Bl
     }
 }
 
-async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type: any) {
+async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type: any, amount: number) {
     console.log("Endowing all users from Alice account...");
     for (let seed = 0; seed < accounts.length; seed++) {
         // should be greater than existential deposit.
         let receiver = accounts[seed];
+        let relayer = alice;
 
         // Send non-AVT to receiver, so they can return it later
-        // if (tx_type === 'proxied') {
-        //     console.log("Proxied sending non-avt token to user");
-        //     console.log(`Alice nonce ${alice.nonce}`);
-        //     console.log(`Receiver nonce ${receiver.nonce}`);
-        //     let tx = await avn.prepare_proxied_transfer(api, alice, receiver, alice);
-        //     console.log("signing");
-        //     await tx.signAndSend(alice.keys, {nonce: alice.nonce});
-        //     alice.nonce++;
-        //     console.log("Signed and sent");
-        // }
+        if (tx_type === 'proxied') {
+            console.log("Proxied sending non-avt token to user");
+            console.log(`Alice token nonce ${alice.nonce}`);
+            console.log(`Receiver token nonce ${receiver.nonce}`);
+            let tx = await avn.prepare_proxied_transfer(api, alice, receiver, relayer, amount);
+            alice.nonce = alice.nonce.add(avn.ONE);
+            console.log("signing");
+            console.log(`Sending Proxied TX with nonce Alice: ${alice.system_nonce}`);
+            await tx.signAndSend(relayer.keys, { nonce: relayer.system_nonce });
+            console.log("increasing nonce");
+            relayer.system_nonce++;
+            console.log("Signed and sent");
+        }
 
         let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
         console.log(
@@ -63,25 +67,29 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
     var thread_payloads: any[][][] = [];
     var sanityCounter = 0;
 
+    let receiver = context.alice;
+    let relayer = context.alice;
+
     for (let thread = 0; thread < params.TOTAL_THREADS; thread++) {
         let batches = [];
         for (var batchNo = 0; batchNo < params.TOTAL_BATCHES; batchNo ++) {
             let batch = [];
             for (var userNo = thread * params.USERS_PER_THREAD; userNo < (thread+1) * params.USERS_PER_THREAD; userNo++) {
-                let sender = context.accounts[userNo];
-                let nonce = sender.system_nonce;
-                sender.system_nonce++;
+                let sender = context.accounts[userNo];              
                 
                 let transfer;
                 let signedTransaction;
                 if (context.tx_type && context.tx_type === 'avt_transfer') {
                     transfer = api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
-                    signedTransaction = transfer.sign(sender.keys, {nonce});    
+                    signedTransaction = transfer.sign(sender.keys, {nonce: sender.system_nonce});    
+                    sender.system_nonce++;
                 } else if (context.tx_type && context.tx_type === 'proxied') {
-                    // let transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer); 
+                    transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer, 1);
+                    sender.nonce = sender.nonce.add(avn.ONE);
+                    signedTransaction = transfer.sign(relayer.keys, { nonce: relayer.system_nonce });
+                    relayer.system_nonce++;
                 }
-                
-                // console.log(`Nonce for ${userNo}: ${nonce}`);
+
                 if (signedTransaction) {
                     batch.push(signedTransaction);
                 }
@@ -115,16 +123,19 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
                 batchPromises.push(
                     new Promise<number>(async resolve => {
                         let transaction = thread_payloads[threadNo][batchNo][transactionNo];
-                        resolve(await transaction.send().catch((err: any) => {
-                            errors.push(err);
-                            return -1;
-                        }));
+                        if (transaction) {
+                            resolve(await transaction.send().catch((err: any) => {
+                                errors.push(err);
+                                return -1;
+                            }));
+                        } else {
+                            resolve(transactionNo);
+                        }
                     })
                 );
             }
-        }
+        }      
         await Promise.all(batchPromises);
-
         if (errors.length > 0) {
             console.log(`${errors.length}/${global_params.TRANSACTION_PER_BATCH} errors sending transactions`);
             for (let i = 0; i < Math.max(10, errors.length); i++) {
@@ -134,12 +145,19 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
     }
 }
 
-async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, finalTime: any) {
+async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, finalTime: any, tx_type:string) {
     let diff = finalTime.getTime() - initialTime.getTime();
     console.log(`Diff: ${diff}`);
     var total_transactions = 0;
     var total_blocks = 0;
-    var latest_block = await getBlockStats(api, ['balances']);
+
+    let filter_name = '';
+    if (tx_type === 'avt_transfer') {
+        filter_name = 'balances';
+    } else if (tx_type === 'proxied') {
+        filter_name = 'tokenManager';
+    }
+    var latest_block = await getBlockStats(api, [filter_name]);
  
     console.log(`latest block: ${latest_block.date}`);
     console.log(`initial time: ${initialTime}`);

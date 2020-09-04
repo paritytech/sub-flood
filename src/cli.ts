@@ -24,10 +24,24 @@
   
     return value;
   }
+
+
+  function arg_as_option(index: number, options: string[]) {
+    let args = process.argv.slice(2);
+    let value = args[index]
+    if (!options.includes(value)) {
+      console.error(`Option ${value} is not valid. Choose one of ${options}`);
+      process.exit(1);
+    }
+  
+    return value;
+  }
+  
   
   function execution_options() {
     let local_network;
     let target_tps;
+    let tx_type;
   
     // Detect network to connect to
     // Default option: local network
@@ -58,10 +72,18 @@
       console.log(`Target TPS: ${target_tps}`);
     }
   
+    let tx_type_index = args_index(['tx']);
+    if (tx_type_index !== undefined) {
+      tx_type = arg_as_option(tx_type_index, ['avt_transfer', 'proxied']);
+    } else {
+      tx_type = 'avt_transfer';
+    }
+    
     return {
         number_of_tx,
         local_network: choose_local || !choose_testnet,
         target_tps,
+        tx_type,
     };
   }
   

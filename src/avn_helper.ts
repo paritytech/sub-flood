@@ -6,6 +6,8 @@ const { TypeRegistry } = require('@polkadot/types');
 
 const token_id = '0xe6a88c4e961395c36396fc5f8bb4427bd0fc22f0';
 const BN = require('bn.js');
+const ONE = new BN(1);
+
 const registry = new TypeRegistry();
 
 const MILLION = new BN(1_000000);
@@ -198,8 +200,8 @@ async function next_system_nonce(api: ApiPromise, account: any) {
     return u8aToHex(signer.sign(encodedParams));
 }
 
-async function prepare_proxied_transfer (api: any, sender: any, receiver: any, relayer: any) {
-    let amount = new BN(1000).mul(MICRO_BASE_TOKEN);
+async function prepare_proxied_transfer (api: any, sender: any, receiver: any, relayer: any, amount_to_transfer: number) {
+    let amount = new BN(amount_to_transfer * 1000).mul(MICRO_BASE_TOKEN);
     let data_to_sign = {
       "relayer": relayer.publicKeyAsHex,
       "from" : sender.publicKeyAsHex,
@@ -209,7 +211,6 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
       "nonce" : sender.nonce.toNumber()
     }
   
-    console.log("Signer suri: ", sender.suri);
     let proof = await signData(data_to_sign, sender.suri);
     console.log("Creating inner call");
   
@@ -303,4 +304,5 @@ export {
     prepare_proxied_transfer,
     setup_accounts,
     setup,
+    ONE,
 }
