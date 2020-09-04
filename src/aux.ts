@@ -85,6 +85,42 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
         thread_payloads.push(batches);
     }
     console.timeEnd(`Pregenerating ${sanityCounter} transactions across ${params.TOTAL_THREADS} threads...`);
+    return thread_payloads;
+}
+
+async function send_transactions(thread_payloads: any[][][], global_params: any) {
+    let nextTime = new Date().getTime();
+    for (var batchNo = 0; batchNo < global_params.TOTAL_BATCHES; batchNo++) {
+
+        while (new Date().getTime() < nextTime) {
+            await new Promise(r => setTimeout(r, 5));
+        }
+
+        nextTime = nextTime + 1000;
+
+        var errors = [];
+
+        console.log(`Starting batch #${batchNo}`);
+        let batchPromises = new Array<Promise<number>>();
+        for (let threadNo = 0; threadNo < global_params.TOTAL_THREADS; threadNo++) {
+            for (let transactionNo = 0; transactionNo < global_params.TRANSACTION_PER_BATCH; transactionNo++) {
+                batchPromises.push(
+                    new Promise<number>(async resolve => {
+                        let transaction = thread_payloads[threadNo][batchNo][transactionNo];
+                        resolve(await transaction.send().catch((err: any) => {
+                            errors.push(err);
+                            return -1;
+                        }));
+                    })
+                );
+            }
+        }
+        await Promise.all(batchPromises);
+
+        if (errors.length > 0) {
+            console.log(`${errors.length}/${global_params.TRANSACTION_PER_BATCH} errors sending transactions`);
+        }
+    }
 }
 
 export {
@@ -92,4 +128,5 @@ export {
     getBlockStats,
     endow_users,
     pre_generate_tx,
+    send_transactions,
 }

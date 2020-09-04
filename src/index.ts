@@ -23,58 +23,25 @@ async function run() {
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
     let TOKENS_TO_SEND = 1;
 
-    let [api, keyring, alice_suri] = await avn.setup(options.local_network);
-    console.time("Setting accounts and fetching nonces");
-    let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
-    console.timeEnd("Setting accounts and fetching nonces");
+    let global_params = {TOTAL_TRANSACTIONS, TOTAL_THREADS, TOTAL_BATCHES, USERS_PER_THREAD, TOKENS_TO_SEND, TRANSACTION_PER_BATCH}
 
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
+    let [api, keyring, alice_suri] = await avn.setup(options.local_network);
+    let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
     await aux.endow_users(api, alice, accounts);
-
-    await aux.pre_generate_tx(
+    let thread_payloads = await aux.pre_generate_tx(
       api, 
       {alice, accounts}, 
-      {TOTAL_TRANSACTIONS, TOTAL_THREADS, TOTAL_BATCHES, USERS_PER_THREAD, TOKENS_TO_SEND});
+      global_params);
 
 
-    // let nextTime = new Date().getTime();
-    // let initialTime = new Date();
+    let initialTime = new Date();
 
-    // for (var batchNo = 0; batchNo < TOTAL_BATCHES; batchNo++) {
+    await aux.send_transactions(thread_payloads, global_params);
 
-    //     while (new Date().getTime() < nextTime) {
-    //         await new Promise(r => setTimeout(r, 5));
-    //     }
-
-    //     nextTime = nextTime + 1000;
-
-    //     var errors = [];
-
-    //     console.log(`Staring batch #${batchNo}`);
-    //     let batchPromises = new Array<Promise<number>>();
-    //     for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
-    //         for (let transactionNo = 0; transactionNo < TRANSACTION_PER_BATCH; transactionNo++) {
-    //             batchPromises.push(
-    //                 new Promise<number>(async resolve => {
-    //                     let transaction = thread_payloads[threadNo][batchNo][transactionNo];
-    //                     resolve(await transaction.send().catch((err: any) => {
-    //                         errors.push(err);
-    //                         return -1;
-    //                     }));
-    //                 })
-    //             );
-    //         }
-    //     }
-    //     await Promise.all(batchPromises);
-
-    //     if (errors.length > 0) {
-    //         console.log(`${errors.length}/${TRANSACTION_PER_BATCH} errors sending transactions`);
-    //     }
-    // }
-
-    // let finalTime = new Date();
-    // let diff = finalTime.getTime() - initialTime.getTime();
+    let finalTime = new Date();
+    let diff = finalTime.getTime() - initialTime.getTime();
 
     // var total_transactions = 0;
     // var total_blocks = 0;
