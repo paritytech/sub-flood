@@ -5,7 +5,7 @@ function seedFromNum(seed: number): string {
     return '//user//' + ("0000" + seed).slice(-4);
 }
 
-async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Promise<any> {
+async function getBlockStats(api: ApiPromise, event_section: string[], hash?: BlockHash | undefined): Promise<any> {
     const signedBlock = hash ? await api.rpc.chain.getBlock(hash) : await api.rpc.chain.getBlock();
 
     // the hash for each extrinsic in the block
@@ -15,10 +15,15 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
 
     let date = new Date(+timestamp);
 
+    let selected_extrinsics = signedBlock.block.extrinsics.filter(
+        ({ method: { methodName, sectionName } }) => event_section.includes(sectionName));
+
     return {
         date,
-        transactions: signedBlock.block.extrinsics.length,
+        transactions: selected_extrinsics.length,
         parent: signedBlock.block.header.parentHash,
+        block_hash: signedBlock.block.hash,
+        block_number: signedBlock.block.header.number,
     }
 }
 
@@ -123,10 +128,34 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
     }
 }
 
+async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, finalTime: any) {
+    let diff = finalTime.getTime() - initialTime.getTime();
+    console.log(`Diff: ${diff}`);
+    var total_transactions = 0;
+    var total_blocks = 0;
+    var latest_block = await getBlockStats(api, ['balances']);
+ 
+    console.log(`latest block: ${latest_block.date}`);
+    console.log(`initial time: ${initialTime}`);
+    for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, ['balances'], latest_block.parent)) {
+        if (latest_block.date < finalTime) {
+            console.log(`block at ${latest_block.date} (${latest_block.block_number}) - ${latest_block.block_hash}): ${latest_block.transactions} transactions`);
+            total_transactions += latest_block.transactions;
+            total_blocks ++;
+        }
+    }
+
+    let tps = (total_transactions * 1000) / diff;
+
+    console.log(`TPS from ${total_blocks} blocks: ${tps}`);
+    console.log(`Total transactions ${total_transactions}`);
+}
+
 export {
     seedFromNum,
     getBlockStats,
     endow_users,
     pre_generate_tx,
     send_transactions,
+    report_substrate_diagnostics,
 }
