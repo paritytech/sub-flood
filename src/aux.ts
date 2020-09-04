@@ -57,8 +57,39 @@ async function endow_users(api: ApiPromise, alice: any, accounts: any[]) {
 }
 
 
+async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
+    console.time(`Pregenerating ${params.TOTAL_TRANSACTIONS} transactions across ${params.TOTAL_THREADS} threads...`);
+    var thread_payloads: any[][][] = [];
+    var sanityCounter = 0;
+
+    for (let thread = 0; thread < params.TOTAL_THREADS; thread++) {
+        let batches = [];
+        for (var batchNo = 0; batchNo < params.TOTAL_BATCHES; batchNo ++) {
+            let batch = [];
+            for (var userNo = thread * params.USERS_PER_THREAD; userNo < (thread+1) * params.USERS_PER_THREAD; userNo++) {
+                let sender = context.accounts[userNo];
+                let nonce = sender.system_nonce;
+                sender.system_nonce++;
+                
+                // let transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer);
+                
+                let transfer = api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
+                let signedTransaction = transfer.sign(sender.keys, {nonce});
+
+                batch.push(signedTransaction);
+
+                sanityCounter++;
+            }
+            batches.push(batch);
+        }
+        thread_payloads.push(batches);
+    }
+    console.timeEnd(`Pregenerating ${sanityCounter} transactions across ${params.TOTAL_THREADS} threads...`);
+}
+
 export {
     seedFromNum,
     getBlockStats,
     endow_users,
+    pre_generate_tx,
 }

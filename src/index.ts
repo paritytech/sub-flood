@@ -24,46 +24,19 @@ async function run() {
     let TOKENS_TO_SEND = 1;
 
     let [api, keyring, alice_suri] = await avn.setup(options.local_network);
-    console.log("Setting accounts and fetching nonces");
+    console.time("Setting accounts and fetching nonces");
     let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
-    console.log("All accounts set up");
+    console.timeEnd("Setting accounts and fetching nonces");
 
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
     await aux.endow_users(api, alice, accounts);
 
+    await aux.pre_generate_tx(
+      api, 
+      {alice, accounts}, 
+      {TOTAL_TRANSACTIONS, TOTAL_THREADS, TOTAL_BATCHES, USERS_PER_THREAD, TOKENS_TO_SEND});
 
-    // console.log(`Pregenerating ${TOTAL_TRANSACTIONS} transactions across ${TOTAL_THREADS} threads...`);
-    // var thread_payloads: any[][][] = [];
-    // var sanityCounter = 0;
-
-    // for (let thread = 0; thread < TOTAL_THREADS; thread++) {
-    //     let batches = [];
-    //     for (var batchNo = 0; batchNo < TOTAL_BATCHES; batchNo ++) {
-    //         let batch = [];
-    //         for (var userNo = thread * USERS_PER_THREAD; userNo < (thread+1) * USERS_PER_THREAD; userNo++) {
-    //             let nonce = nonces[userNo];
-    //             nonces[userNo] ++;
-    //             let senderKeyPair = keyPairs.get(userNo)!;
-
-    //             let sender = senderKeyPair;
-    //             let receiver = aliceKeyPair;
-    //             let relayer = senderKeyPair;
-
-    //             let transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer);
-
-    //             // let transfer = api.tx.balances.transfer(aliceKeyPair.address, TOKENS_TO_SEND);
-    //             let signedTransaction = transfer.sign(senderKeyPair, {nonce});
-
-    //             batch.push(signedTransaction);
-
-    //             sanityCounter++;
-    //         }
-    //         batches.push(batch);
-    //     }
-    //     thread_payloads.push(batches);
-    // }
-    // console.log(`Done pregenerating transactions (${sanityCounter}).`);
 
     // let nextTime = new Date().getTime();
     // let initialTime = new Date();
