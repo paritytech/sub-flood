@@ -35,7 +35,6 @@ async function run() {
       {alice, accounts}, 
       global_params);
 
-
     let initialTime = new Date();
 
     await aux.send_transactions(thread_payloads, global_params);
@@ -43,23 +42,23 @@ async function run() {
     let finalTime = new Date();
     let diff = finalTime.getTime() - initialTime.getTime();
 
-    // var total_transactions = 0;
-    // var total_blocks = 0;
-    // var latest_block = await aux.getBlockStats(api);
-    // console.log(`latest block: ${latest_block.date}`);
-    // console.log(`initial time: ${initialTime}`);
-    // for (; latest_block.date > initialTime; latest_block = await aux.getBlockStats(api, latest_block.parent)) {
-    //     if (latest_block.date < finalTime) {
-    //         console.log(`block at ${latest_block.date}: ${latest_block.transactions} transactions`);
-    //         total_transactions += latest_block.transactions;
-    //         total_blocks ++;
-    //     }
-    // }
+    var total_transactions = 0;
+    var total_blocks = 0;
+    var latest_block = await aux.getBlockStats(api);
+    console.log(`latest block: ${latest_block.date}`);
+    console.log(`initial time: ${initialTime}`);
+    for (; latest_block.date > initialTime; latest_block = await aux.getBlockStats(api, latest_block.parent)) {
+        if (latest_block.date < finalTime) {
+            console.log(`block at ${latest_block.date}: ${latest_block.transactions} transactions`);
+            total_transactions += latest_block.transactions;
+            total_blocks ++;
+        }
+    }
 
-    // let tps = (total_transactions * 1000) / diff;
+    let tps = (total_transactions * 1000) / diff;
 
-    // console.log(`TPS from ${total_blocks} blocks: ${tps}`)
-    // console.log(`Total transactions ${total_transactions}`)
+    console.log(`TPS from ${total_blocks} blocks: ${tps}`)
+    console.log(`Total transactions ${total_transactions}`)
 
 }
 
