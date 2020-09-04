@@ -30,39 +30,8 @@ async function run() {
 
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
-    // let nonces = [];
-    // console.log("Fetching nonces for accounts...");
-    // for (let i = 0; i <= TOTAL_USERS; i++) {
-    //     let stringSeed = aux.seedFromNum(i);
-    //     let keys = keyring.addFromUri(stringSeed);
-    //     let nonce = (await api.query.system.account(keys.address)).nonce.toNumber();
-    //     nonces.push(nonce);
-    // }
-    // console.log("All nonces fetched!");
-
     await aux.endow_users(api, alice, accounts);
 
-    // console.log("Endowing all users from Alice account...");
-    // let aliceKeyPair = keyring.addFromUri(alice_suri);
-    // let aliceNonce = (await api.query.system.account(aliceKeyPair.address)).nonce.toNumber();
-    // let keyPairs = new Map<number, KeyringPair>()
-    // console.log("Alice nonce is " + aliceNonce);
-
-    // for (let seed = 0; seed <= TOTAL_USERS; seed++) {
-    //     let keypair = keyring.addFromUri(aux.seedFromNum(seed));
-    //     keyPairs.set(seed, keypair);
-
-    //     // should be greater than existential deposit.
-    //     let transfer = api.tx.balances.transfer(keypair.address, '1000000000000000');
-
-    //     let receiverSeed = aux.seedFromNum(seed);
-    //     console.log(
-    //         `Alice -> ${receiverSeed} (${keypair.address})`
-    //     );
-    //     await transfer.signAndSend(aliceKeyPair, { nonce: aliceNonce });
-    //     aliceNonce ++;
-    // }
-    // console.log("All users endowed from Alice account!");
 
     // console.log(`Pregenerating ${TOTAL_TRANSACTIONS} transactions across ${TOTAL_THREADS} threads...`);
     // var thread_payloads: any[][][] = [];
