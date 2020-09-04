@@ -37,23 +37,16 @@ async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type
 
         // Send non-AVT to receiver, so they can return it later
         if (tx_type === 'proxied') {
-            console.log("Proxied sending non-avt token to user");
-            console.log(`Alice token nonce ${alice.nonce}`);
-            console.log(`Receiver token nonce ${receiver.nonce}`);
             let tx = await avn.prepare_proxied_transfer(api, alice, receiver, relayer, amount);
             alice.nonce = alice.nonce.add(avn.ONE);
-            console.log("signing");
-            console.log(`Sending Proxied TX with nonce Alice: ${alice.system_nonce}`);
             await tx.signAndSend(relayer.keys, { nonce: relayer.system_nonce });
-            console.log("increasing nonce");
             relayer.system_nonce++;
-            console.log("Signed and sent");
         }
 
         let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
-        console.log(
-            `Alice -> ${receiver.suri} (${receiver.keys.address})`
-        );
+        // console.log(
+        //     `Alice -> ${receiver.suri} (${receiver.keys.address})`
+        // );
 
         await transfer.signAndSend(alice.keys, { nonce: alice.system_nonce });
         alice.system_nonce ++;
@@ -163,7 +156,7 @@ async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, f
     console.log(`initial time: ${initialTime}`);
     for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, ['balances'], latest_block.parent)) {
         if (latest_block.date < finalTime && latest_block.transactions > 0) {
-            console.log(`block at ${latest_block.date} (${latest_block.block_number}) - ${latest_block.block_hash}): ${latest_block.transactions} transactions`);
+            console.log(`block at ${latest_block.date} (${latest_block.block_number}) - ${latest_block.block_hash}: ${latest_block.transactions} transactions`);
             total_transactions += latest_block.transactions;
             total_blocks ++;
         }

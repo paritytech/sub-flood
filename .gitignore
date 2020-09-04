@@ -61,3 +61,7 @@ typings/
 .next
 
 /dist/
+old_code/common.js
+old_code/index_local.ts
+old_code/index_simple_transfer.ts
+old_code/remote_index.ts
