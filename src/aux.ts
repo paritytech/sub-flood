@@ -138,7 +138,7 @@ async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, f
     console.log(`latest block: ${latest_block.date}`);
     console.log(`initial time: ${initialTime}`);
     for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, ['balances'], latest_block.parent)) {
-        if (latest_block.date < finalTime) {
+        if (latest_block.date < finalTime && latest_block.transactions > 0) {
             console.log(`block at ${latest_block.date} (${latest_block.block_number}) - ${latest_block.block_hash}): ${latest_block.transactions} transactions`);
             total_transactions += latest_block.transactions;
             total_blocks ++;
@@ -146,9 +146,31 @@ async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, f
     }
 
     let tps = (total_transactions * 1000) / diff;
-
+    
     console.log(`TPS from ${total_blocks} blocks: ${tps}`);
     console.log(`Total transactions ${total_transactions}`);
+}
+
+async function sleep(milliseconds: number) {
+    await new Promise(r => setTimeout(r, milliseconds));
+}
+
+async function pending_transactions_cleared(api: ApiPromise, max_wait?: number) {
+    let final_time = new Date().getTime();
+    if (max_wait) {
+        final_time = final_time + max_wait;
+    }
+    
+    let pending_transactions = await api.rpc.author.pendingExtrinsics();
+    console.log("pending_transactions: " + pending_transactions.length);
+    while (pending_transactions.length > 0) {
+      await sleep(100);
+      pending_transactions = await api.rpc.author.pendingExtrinsics();
+      console.log("pending_transactions: " + pending_transactions.length);
+      if (max_wait) {
+        if (new Date().getTime() > final_time) break;
+      }      
+    }
 }
 
 export {
@@ -158,4 +180,6 @@ export {
     pre_generate_tx,
     send_transactions,
     report_substrate_diagnostics,
+    sleep,
+    pending_transactions_cleared,
 }

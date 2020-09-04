@@ -30,6 +30,10 @@ async function run() {
     let [api, keyring, alice_suri] = await avn.setup(options.local_network);
     let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
     await aux.endow_users(api, alice, accounts);
+
+    await aux.pending_transactions_cleared(api);
+    console.log(".");
+
     let thread_payloads = await aux.pre_generate_tx(
       api, 
       {alice, accounts}, 
@@ -38,6 +42,8 @@ async function run() {
     let initialTime = new Date();
 
     await aux.send_transactions(thread_payloads, global_params);
+
+    await aux.pending_transactions_cleared(api, 10 * 1000);
 
     let finalTime = new Date();
 
