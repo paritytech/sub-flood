@@ -260,12 +260,14 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
   }
 
 async function setup_accounts(api: ApiPromise, keyring: Keyring, alice_suri: string, other_accounts: number) {
+    console.time("Setting accounts and fetching nonces");
     let alice = await build_account(api, keyring, alice_suri);;
 
     let accounts = [];
     for (let i = 0; i < other_accounts; i++) {
         accounts.push(await build_account(api, keyring, aux.seedFromNum(i)));
     }
+    console.timeEnd("Setting accounts and fetching nonces");
 
     return [
         alice,
