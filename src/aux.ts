@@ -30,6 +30,7 @@ async function getBlockStats(api: ApiPromise, event_section: string[], hash?: Bl
 
 async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type: any, amount: number) {
     console.log("Endowing all users from Alice account...");
+    console.log(`First nonce: ${alice.system_nonce}`);
     for (let seed = 0; seed < accounts.length; seed++) {
         // should be greater than existential deposit.
         let receiver = accounts[seed];
@@ -51,12 +52,14 @@ async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type
         await transfer.signAndSend(alice.keys, { nonce: alice.system_nonce });
         alice.system_nonce ++;
     }
+    console.log(`Last nonce: ${alice.system_nonce}`);
     console.log("All users endowed from Alice account!");
 }
 
 
 async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
     console.time(`Pregenerating ${params.TOTAL_TRANSACTIONS} transactions across ${params.TOTAL_THREADS} threads...`);
+    console.log(`First nonce: ${context.alice.system_nonce}`);
     var thread_payloads: any[][][] = [];
     var sanityCounter = 0;
 
@@ -94,6 +97,7 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
         thread_payloads.push(batches);
     }
     console.timeEnd(`Pregenerating ${sanityCounter} transactions across ${params.TOTAL_THREADS} threads...`);
+    console.log(`Last nonce: ${context.alice.system_nonce}`);
     return thread_payloads;
 }
 
