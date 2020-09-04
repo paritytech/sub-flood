@@ -23,6 +23,16 @@ async function run() {
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
     let TOKENS_TO_SEND = 1;
 
+    if (!Number.isInteger(USERS_PER_THREAD)) {
+        console.log(`USERS_PRE_THREAD is not an integer. Please make TPS a multiple of ${TOTAL_THREADS}`);
+        process.exit(-1);
+    }
+
+    if (!Number.isInteger(TOTAL_BATCHES)) {
+        console.log(`TOTAL_BATCHES is not an integer. Please make TOTAL_TRANSACTIONS (${TOTAL_TRANSACTIONS}) a multiple of TPS ${TPS}`);
+        process.exit(-1);
+    }
+
     let global_params = {TOTAL_TRANSACTIONS, TOTAL_THREADS, TOTAL_BATCHES, USERS_PER_THREAD, TOKENS_TO_SEND, TRANSACTION_PER_BATCH}
 
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
@@ -44,7 +54,6 @@ async function run() {
 
     await aux.pending_transactions_cleared(api);
     console.log("..");
-    console.log("Globals: %j", global_params);
 
     await aux.send_transactions(thread_payloads, global_params);
 
