@@ -76,13 +76,14 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
                 let transfer;
                 let signedTransaction;
                 if (context.tx_type && context.tx_type === 'avt_transfer') {
-                    transfer = api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
-                    signedTransaction = transfer.sign(sender.keys, {nonce: sender.system_nonce});    
+                    transfer = await api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
+                    signedTransaction = await transfer.sign(sender.keys, {nonce: sender.system_nonce});    
                     sender.system_nonce++;
                 } else if (context.tx_type && context.tx_type === 'proxied') {
+                    
                     transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer, 1);
                     sender.nonce = sender.nonce.add(avn.ONE);
-                    signedTransaction = transfer.sign(relayer.keys, { nonce: relayer.system_nonce });
+                    signedTransaction = await transfer.sign(relayer.keys, { nonce: relayer.system_nonce });
                     relayer.system_nonce++;
                 }
 
