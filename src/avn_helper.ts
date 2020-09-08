@@ -17,9 +17,9 @@ const MICRO_BASE_TOKEN = MILLION.mul(MILLION);
 const EU_WEST_2_URL = "ws://ec2-18-132-203-154.eu-west-2.compute.amazonaws.com:9944";
 const LOCAL_NODE_URL = "ws://localhost:9944";
 
-const LOCAL_ALICE_SURI = '//Alice';
-// const TESTNET_ALICE_SURI = 'right lonely error shoot slam fuel choose spider enforce intact jar bright';
-const TESTNET_ALICE_SURI = LOCAL_ALICE_SURI;
+// We have uniformized the testnet to use these simple suris for the default accounts
+const ALICE_SURI = '//Alice';
+const CHARLIE_SURI = '//Charlie';
 
 function pk_to_string(publicKeyAsObj: any) {
     return u8aToHex(publicKeyAsObj);
@@ -235,15 +235,11 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
     }
 
     let api;
-    let alice_suri;
 
     if (local_network) {
       api = await initialiseAPI(LOCAL_NODE_URL);
-      alice_suri = LOCAL_ALICE_SURI;
     } else {
       api = await initialiseAPI(EU_WEST_2_URL);
-    //   alice_suri = TESTNET_ALICE_SURI;
-    alice_suri = LOCAL_ALICE_SURI;
     }
   
     let keyring = new Keyring({type: 'sr25519'});
@@ -252,7 +248,7 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
     return [
         api,        
         keyring,
-        alice_suri,
+        {alice: ALICE_SURI, charlie: CHARLIE_SURI},
     ];
   }
 
@@ -266,9 +262,10 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
     return api;
   }
 
-async function setup_accounts(api: ApiPromise, keyring: Keyring, alice_suri: string, other_accounts: number) {
+async function setup_accounts(api: ApiPromise, keyring: Keyring, suris: any, other_accounts: number) {
     console.time("Setting accounts and fetching nonces");
-    let alice = await build_account(api, keyring, alice_suri);;
+    let alice = await build_account(api, keyring, suris.alice);
+    let charlie = await build_account(api, keyring, suris.charlie);
 
     let accounts = [];
     for (let i = 0; i < other_accounts; i++) {
@@ -276,10 +273,12 @@ async function setup_accounts(api: ApiPromise, keyring: Keyring, alice_suri: str
     }
     console.timeEnd("Setting accounts and fetching nonces");
 
-    return [
-        alice,
-        accounts,
-    ];
+    let named_accounts = {alice, charlie};
+
+    return {
+        named_accounts,
+        numbered_accounts: accounts,
+    };
 }
   
 async function build_account(api: ApiPromise, keyring: Keyring, suri: string) {
@@ -303,4 +302,5 @@ export {
     setup_accounts,
     setup,
     ONE,
+    MICRO_BASE_TOKEN,
 }

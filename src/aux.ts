@@ -1,6 +1,7 @@
 import {ApiPromise, WsProvider} from "@polkadot/api";
 import { SignedBlock, BlockHash, BlockAttestations } from "@polkadot/types/interfaces";
 import * as avn from "./avn_helper";
+const BN = require('bn.js');
 
 function seedFromNum(seed: number): string {
     return '//user//' + ("0000" + seed).slice(-4);
@@ -28,9 +29,12 @@ async function getBlockStats(api: ApiPromise, event_section: string[], hash?: Bl
     }
 }
 
-async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type: any, amount: number) {
+async function endow_users(api: ApiPromise, named_accounts: any, accounts: any[], tx_type: any, amount: number) {
     console.log("Endowing all users from Alice account...");
+    let alice = named_accounts.alice;
+    let charlie = named_accounts.charlie;
     console.log(`First nonce: ${alice.system_nonce}`);
+
     for (let seed = 0; seed < accounts.length; seed++) {
         // should be greater than existential deposit.
         let receiver = accounts[seed];
@@ -56,31 +60,30 @@ async function endow_users(api: ApiPromise, alice: any, accounts: any[], tx_type
     console.log("All users endowed from Alice account!");
 }
 
-
 async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
     console.time(`Pregenerating ${params.TOTAL_TRANSACTIONS} transactions across ${params.TOTAL_THREADS} threads...`);
-    console.log(`First nonce: ${context.alice.system_nonce}`);
+    console.log(`First nonce: ${context.named_accounts.alice.system_nonce}`);
     var thread_payloads: any[][][] = [];
     var sanityCounter = 0;
 
-    let receiver = context.alice;
-    let relayer = context.alice;
+    let receiver = context.named_accounts.alice;
+    let avt_receiver = context.named_accounts.charlie;
+    let relayer = context.named_accounts.alice;
 
     for (let thread = 0; thread < params.TOTAL_THREADS; thread++) {
         let batches = [];
         for (var batchNo = 0; batchNo < params.TOTAL_BATCHES; batchNo ++) {
             let batch = [];
             for (var userNo = thread * params.USERS_PER_THREAD; userNo < (thread+1) * params.USERS_PER_THREAD; userNo++) {
-                let sender = context.accounts[userNo];              
+                let sender = context.numbered_accounts[userNo];              
                 
                 let transfer;
                 let signedTransaction;
                 if (context.tx_type && context.tx_type === 'avt_transfer') {
-                    transfer = await api.tx.balances.transfer(context.alice.keys.address, params.TOKENS_TO_SEND);
+                    transfer = await api.tx.balances.transfer(avt_receiver.keys.address, params.TOKENS_TO_SEND);
                     signedTransaction = await transfer.sign(sender.keys, {nonce: sender.system_nonce});    
                     sender.system_nonce++;
-                } else if (context.tx_type && context.tx_type === 'proxied') {
-                    
+                } else if (context.tx_type && context.tx_type === 'proxied') {                    
                     transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer, 1);
                     sender.nonce = sender.nonce.add(avn.ONE);
                     signedTransaction = await transfer.sign(relayer.keys, { nonce: relayer.system_nonce });
@@ -98,11 +101,13 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
         thread_payloads.push(batches);
     }
     console.timeEnd(`Pregenerating ${sanityCounter} transactions across ${params.TOTAL_THREADS} threads...`);
-    console.log(`Last nonce: ${context.alice.system_nonce}`);
+    console.log(`Last nonce: ${context.named_accounts.alice.system_nonce}`);
     return thread_payloads;
 }
 
 async function send_transactions(thread_payloads: any[][][], global_params: any) {
+    // let tx0 = thread_payloads[0][0][0];
+    // console.log(`TX0: ${tx0}`);
     let nextTime = new Date().getTime();
     for (var batchNo = 0; batchNo < global_params.TOTAL_BATCHES; batchNo++) {
 
@@ -184,15 +189,31 @@ async function pending_transactions_cleared(api: ApiPromise, max_wait?: number) 
     }
     
     let pending_transactions = await api.rpc.author.pendingExtrinsics();
-    console.log("pending_transactions: " + pending_transactions.length);
+    // console.log("pending_transactions: " + pending_transactions.length);
     while (pending_transactions.length > 0) {
       await sleep(100);
       pending_transactions = await api.rpc.author.pendingExtrinsics();
-      console.log("pending_transactions: " + pending_transactions.length);
+    //   console.log("pending_transactions: " + pending_transactions.length);
       if (max_wait) {
         if (new Date().getTime() > final_time) break;
       }      
     }
+}
+
+async function get_avt_balance(api: ApiPromise, account: any) {
+    let balance_data = (await api.query.system.account(account.keys.address)).data.free;
+    const micro = new BN(1_000000);
+    const pico = micro.mul(micro);
+    return new BN(balance_data, 16).div(pico);
+}
+
+async function report_avt_balances(api: ApiPromise, named_accounts: any, message: string) {
+    let alice_balance = await get_avt_balance(api, named_accounts.alice);
+    let charlie_balance = await get_avt_balance(api, named_accounts.charlie);
+    console.log(`Alice's   ${message} AVT: ${alice_balance}`);
+    console.log(`Charlie's ${message} AVT: ${charlie_balance}`);
+
+    return {alice: alice_balance, charlie: charlie_balance};
 }
 
 export {
@@ -204,4 +225,6 @@ export {
     report_substrate_diagnostics,
     sleep,
     pending_transactions_cleared,
+    get_avt_balance,
+    report_avt_balances,
 }

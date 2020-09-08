@@ -20,7 +20,7 @@ async function run() {
 
     let TOTAL_USERS = TPS;
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
-    let TOKENS_TO_SEND = 1;
+    let TOKENS_TO_SEND = avn.MICRO_BASE_TOKEN;
 
     if (!Number.isInteger(USERS_PER_THREAD)) {
         console.log(`USERS_PRE_THREAD is not an integer. Please make TPS a multiple of ${TOTAL_THREADS}`);
@@ -36,16 +36,18 @@ async function run() {
 
     console.log(`TPS: ${TPS}, TX COUNT: ${TOTAL_TRANSACTIONS}`);
 
-    let [api, keyring, alice_suri] = await avn.setup(options.local_network);
-    let [alice, accounts] = await avn.setup_accounts(api, keyring, alice_suri, TOTAL_USERS);
-    await aux.endow_users(api, alice, accounts, options.tx_type, TOTAL_BATCHES);
+    let [api, keyring, named_account_suris] = await avn.setup(options.local_network);
+    let account_data = await avn.setup_accounts(api, keyring, named_account_suris, TOTAL_USERS);
+    
+    let initial_balances = await aux.report_avt_balances(api, account_data.named_accounts, "initial");
+    await aux.endow_users(api, account_data.named_accounts, account_data.numbered_accounts, options.tx_type, TOTAL_BATCHES);
 
     await aux.pending_transactions_cleared(api);
     console.log(".");
 
     let thread_payloads = await aux.pre_generate_tx(
-      api, 
-      {alice, accounts, tx_type: options.tx_type}, 
+      api,
+      {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
       global_params);
 
     let initialTime = new Date();
@@ -56,7 +58,10 @@ async function run() {
     await aux.send_transactions(thread_payloads, global_params);
 
     await aux.pending_transactions_cleared(api, 10 * 1000);
+    let final_balances = await aux.report_avt_balances(api, account_data.named_accounts, "final");
 
+    console.log(`Alice spent: ${await initial_balances.alice.sub(final_balances.alice)}`);
+    console.log(`Charlie received: ${await final_balances.charlie.sub(initial_balances.charlie)}`);
     let finalTime = new Date();
 
     await aux.report_substrate_diagnostics(api, initialTime, finalTime, options.tx_type);  
