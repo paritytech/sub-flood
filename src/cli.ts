@@ -88,8 +88,5 @@
   }
   
 export {
-    args_includes,
-    args_index,
-    arg_as_integer,
     execution_options,   
 }

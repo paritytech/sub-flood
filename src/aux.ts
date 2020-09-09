@@ -65,6 +65,7 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
     console.log(`First nonce: ${context.named_accounts.alice.system_nonce}`);
     var thread_payloads: any[][][] = [];
     var sanityCounter = 0;
+    let use_batches = context.use_batches;
 
     let receiver = context.named_accounts.alice;
     let avt_receiver = context.named_accounts.charlie;
@@ -127,7 +128,11 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
                     new Promise<number>(async resolve => {
                         let transaction = thread_payloads[threadNo][batchNo][transactionNo];
                         if (transaction) {
-                            resolve(await transaction.send().catch((err: any) => {
+                            resolve(await transaction.send()
+                            .then((value: any) => {
+                                console.log(`Transaction finished. Batch: ${batchNo}, Thread: ${threadNo}, User: ${transactionNo}`);
+                            })
+                            .catch((err: any) => {
                                 errors.push(err);
                                 return -1;
                             }));
@@ -210,8 +215,8 @@ async function get_avt_balance(api: ApiPromise, account: any) {
 async function report_avt_balances(api: ApiPromise, named_accounts: any, message: string) {
     let alice_balance = await get_avt_balance(api, named_accounts.alice);
     let charlie_balance = await get_avt_balance(api, named_accounts.charlie);
-    console.log(`Alice's   ${message} AVT: ${alice_balance}`);
-    console.log(`Charlie's ${message} AVT: ${charlie_balance}`);
+    console.log(`Alice's   ${message} microAVT: ${alice_balance}`);
+    console.log(`Charlie's ${message} microAVT: ${charlie_balance}`);
 
     return {alice: alice_balance, charlie: charlie_balance};
 }
