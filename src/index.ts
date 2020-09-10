@@ -39,12 +39,13 @@ async function run() {
     let [api, keyring, named_account_suris] = await avn.setup(options.local_network);
     let account_data = await avn.setup_accounts(api, keyring, named_account_suris, TOTAL_USERS);
     
-    let initial_balances = await aux.report_avt_balances(api, account_data.named_accounts, "initial");
+    let initial_balances = await aux.report_balances(api, account_data.named_accounts, "before endowment");
     await aux.endow_users(api, account_data.named_accounts, account_data.numbered_accounts, options.tx_type, TOTAL_BATCHES);
 
-    await aux.pending_transactions_cleared(api);
+    await aux.pending_transactions_cleared(api, 0);
     console.log(".");
-
+    await aux.report_balances(api, account_data.named_accounts, "post endowment");
+    
     let use_batches = options.use_batches;
 
     let initialTime;
@@ -56,10 +57,11 @@ async function run() {
             global_params);  
 
 
-        initialTime = new Date();
+        
 
-        await aux.pending_transactions_cleared(api);
+        await aux.pending_transactions_cleared(api, 0);
     
+    	initialTime = new Date();
         await aux.send_proxied_batches(batches, global_params);          
     } else {
         let thread_payloads = await aux.pre_generate_tx(
@@ -67,16 +69,16 @@ async function run() {
             {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
             global_params);
       
-        initialTime = new Date();
     
-        await aux.pending_transactions_cleared(api);
+        await aux.pending_transactions_cleared(api, 0);
         console.log("..");
     
-        await aux.send_transactions(thread_payloads, global_params);      
+        initialTime = new Date();
+	await aux.send_transactions(thread_payloads, global_params);      
     }
 
-    await aux.pending_transactions_cleared(api, 10 * 1000);
-    let final_balances = await aux.report_avt_balances(api, account_data.named_accounts, "final");
+    await aux.pending_transactions_cleared(api, 20);
+    let final_balances = await aux.report_balances(api, account_data.named_accounts, "closing");
 
     console.log(`Alice spent: ${await initial_balances.alice.sub(final_balances.alice)}`);
     console.log(`Charlie received: ${await final_balances.charlie.sub(initial_balances.charlie)}`);

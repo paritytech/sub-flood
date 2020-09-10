@@ -49,15 +49,15 @@ async function endow_users(api: ApiPromise, named_accounts: any, accounts: any[]
             alice.nonce = alice.nonce.add(avn.ONE);
             await tx.signAndSend(relayer.keys, { nonce: relayer.system_nonce });
             relayer.system_nonce++;
+        } else {
+            let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
+            // console.log(
+            //     `Alice -> ${receiver.suri} (${receiver.keys.address})`
+            // );
+
+            await transfer.signAndSend(alice.keys, { nonce: alice.system_nonce });
+            alice.system_nonce ++;
         }
-
-        let transfer = api.tx.balances.transfer(receiver.keys.address, '1000000000000000');
-        // console.log(
-        //     `Alice -> ${receiver.suri} (${receiver.keys.address})`
-        // );
-
-        await transfer.signAndSend(alice.keys, { nonce: alice.system_nonce });
-        alice.system_nonce ++;
     }
     console.log(`Last nonce: ${alice.system_nonce}`);
     console.log("All users endowed from Alice account!");
@@ -95,9 +95,10 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
 
                 if (signedTransaction) {
                     batch.push(signedTransaction);
+                    sanityCounter++;
+                } else {
+                    console.log("*********** ERROR pushing txs to batch");
                 }
-
-                sanityCounter++;
             }
             batches.push(batch);
         }
@@ -110,6 +111,7 @@ async function pre_generate_tx(api: ApiPromise, context: any, params: any) {
 
 async function send_transactions(thread_payloads: any[][][], global_params: any) {
     let nextTime = new Date().getTime();
+    let total_tx_sent = 0;
     for (var batchNo = 0; batchNo < global_params.TOTAL_BATCHES; batchNo++) {
 
         while (new Date().getTime() < nextTime) {
@@ -129,11 +131,12 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
                         let transaction = thread_payloads[threadNo][batchNo][transactionNo];
 
                         if (transaction) {
+                            total_tx_sent++;
                             resolve(await transaction.send()
-                            .then((value: any) => {
-                            })
+ 
                             .catch((err: any) => {
                                 errors.push(err);
+                                console.log(`Error - Batch: ${batchNo}, Thread: ${threadNo}, User: ${transactionNo}`);
                                 return -1;
                             }));
                         } else {
@@ -142,15 +145,25 @@ async function send_transactions(thread_payloads: any[][][], global_params: any)
                     })
                 );
             }
-        }      
-        await Promise.all(batchPromises);
+        }
+
+        let r = await Promise.all(batchPromises).catch((err: any) => {
+            console.log("************ERROR sending batch********", err);
+            errors.push(err);
+            return [];
+        });
+
+        console.log("Successfully sent transactions: ", r.length);
+
         if (errors.length > 0) {
             console.log(`${errors.length}/${global_params.TRANSACTION_PER_BATCH} errors sending transactions`);
             for (let i = 0; i < Math.min(10, errors.length); i++) {
                 console.log(`Error: ${errors[i]}`);
             }
         }
+
     }
+    console.log(`Total tx sent: ${total_tx_sent}`);
 }
 
 async function pre_generate_proxied_batches(api: ApiPromise, context: any, params: any) {
@@ -256,18 +269,18 @@ async function sleep(milliseconds: number) {
     await new Promise(r => setTimeout(r, milliseconds));
 }
 
-async function pending_transactions_cleared(api: ApiPromise, max_wait?: number) {
+async function pending_transactions_cleared(api: ApiPromise, min_num_pending_tx: number, max_wait?: number) {
     let final_time = new Date().getTime();
     if (max_wait) {
         final_time = final_time + max_wait;
     }
     
     let pending_transactions = await api.rpc.author.pendingExtrinsics();
-    // console.log("pending_transactions: " + pending_transactions.length);
-    while (pending_transactions.length > 0) {
+    console.log("pending_transactions: " + pending_transactions.length);
+    while (pending_transactions.length > min_num_pending_tx) {
       await sleep(100);
       pending_transactions = await api.rpc.author.pendingExtrinsics();
-    //   console.log("pending_transactions: " + pending_transactions.length);
+      console.log("pending_transactions: " + pending_transactions.length);
       if (max_wait) {
         if (new Date().getTime() > final_time) break;
       }      
@@ -281,11 +294,16 @@ async function get_avt_balance(api: ApiPromise, account: any) {
     return new BN(balance_data, 16).div(pico);
 }
 
-async function report_avt_balances(api: ApiPromise, named_accounts: any, message: string) {
+async function report_balances(api: ApiPromise, named_accounts: any, message: string) {
     let alice_balance = await get_avt_balance(api, named_accounts.alice);
     let charlie_balance = await get_avt_balance(api, named_accounts.charlie);
-    console.log(`Alice's   ${message} microAVT: ${alice_balance}`);
-    console.log(`Charlie's ${message} microAVT: ${charlie_balance}`);
+    console.log(`Alice's   ${message} AVT balance (microAVT): ${alice_balance}`);
+    console.log(`Charlie's ${message} AVT balance (microAVT): ${charlie_balance}`);
+
+    let alice_token_balance = await avn.get_token_balance(api, named_accounts.alice);
+    let charlie_token_balance = await avn.get_token_balance(api, named_accounts.charlie);
+    console.log(`Alice's   ${message} Token balance (micro): ${alice_balance}`);
+    console.log(`Charlie's ${message} Token balance (micro): ${charlie_balance}`);
 
     return {alice: alice_balance, charlie: charlie_balance};
 }
@@ -300,7 +318,7 @@ export {
     sleep,
     pending_transactions_cleared,
     get_avt_balance,
-    report_avt_balances,
+    report_balances,
     pre_generate_proxied_batches,
     send_proxied_batches,
 }

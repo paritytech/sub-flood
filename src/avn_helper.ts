@@ -14,8 +14,9 @@ const MILLION = new BN(1_000000);
 const BASE_TOKEN = MILLION.mul(MILLION).mul(MILLION);
 const MICRO_BASE_TOKEN = MILLION.mul(MILLION);
 
-const EU_WEST_2_URL = "ws://ec2-18-132-203-154.eu-west-2.compute.amazonaws.com:9944";
+const TESTNET_URL = "wss://eu-west-1.avntestnet.artos.io";
 const LOCAL_NODE_URL = "ws://localhost:9944";
+const TOKEN_CONTRACT = "0xe6a88c4e961395c36396fc5f8bb4427bd0fc22f0";
 
 // We have uniformized the testnet to use these simple suris for the default accounts
 const ALICE_SURI = '//Alice';
@@ -38,6 +39,20 @@ async function next_system_nonce(api: ApiPromise, account: any) {
     let account_data = await api.query.system.account(account.keys.address);
     return account_data.nonce.toNumber();
   }
+
+async function get_token_balance(api: ApiPromise, account: any) {
+  const micro = new BN(1_000000);
+  const pico = micro.mul(micro);
+
+  if (api.query.tokenManager) {
+    let token_balance = await api.query.tokenManager.balances([TOKEN_CONTRACT, account.publicKeyAsHex]);
+    let balance_in_pico = new BN(token_balance).div(pico);
+    return balance_in_pico.toString();
+  } else {
+      return undefined;
+  }
+}
+  
 
   const common_types = 
     {
@@ -239,12 +254,13 @@ async function prepare_proxied_transfer (api: any, sender: any, receiver: any, r
     if (local_network) {
       api = await initialiseAPI(LOCAL_NODE_URL);
     } else {
-      api = await initialiseAPI(EU_WEST_2_URL);
+      api = await initialiseAPI(TESTNET_URL);
     }
   
     let keyring = new Keyring({type: 'sr25519'});
   
     console.timeEnd("Setup");
+
     return [
         api,        
         keyring,
@@ -303,4 +319,5 @@ export {
     setup,
     ONE,
     MICRO_BASE_TOKEN,
+    get_token_balance,
 }
