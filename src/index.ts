@@ -45,17 +45,35 @@ async function run() {
     await aux.pending_transactions_cleared(api);
     console.log(".");
 
-    let thread_payloads = await aux.pre_generate_tx(
-      api,
-      {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
-      global_params);
+    let use_batches = options.use_batches;
 
-    let initialTime = new Date();
+    let initialTime;
 
-    await aux.pending_transactions_cleared(api);
-    console.log("..");
+    if (use_batches) {
+        let batches = await aux.pre_generate_proxied_batches(
+            api, 
+            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
+            global_params);  
 
-    await aux.send_transactions(thread_payloads, global_params);
+
+        initialTime = new Date();
+
+        await aux.pending_transactions_cleared(api);
+    
+        await aux.send_proxied_batches(batches, global_params);          
+    } else {
+        let thread_payloads = await aux.pre_generate_tx(
+            api,
+            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
+            global_params);
+      
+        initialTime = new Date();
+    
+        await aux.pending_transactions_cleared(api);
+        console.log("..");
+    
+        await aux.send_transactions(thread_payloads, global_params);      
+    }
 
     await aux.pending_transactions_cleared(api, 10 * 1000);
     let final_balances = await aux.report_avt_balances(api, account_data.named_accounts, "final");
@@ -64,7 +82,12 @@ async function run() {
     console.log(`Charlie received: ${await final_balances.charlie.sub(initial_balances.charlie)}`);
     let finalTime = new Date();
 
-    await aux.report_substrate_diagnostics(api, initialTime, finalTime, options.tx_type);  
+    let batch_multiplier = 1;
+    if (use_batches) {
+        batch_multiplier = TOTAL_TRANSACTIONS / TOTAL_BATCHES;
+    }
+
+    await aux.report_substrate_diagnostics(api, initialTime, finalTime, {tx_type: options.tx_type, use_batches: options.use_batches, batch_multiplier});  
 }
 
 // run();

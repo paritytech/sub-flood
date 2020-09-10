@@ -47,6 +47,7 @@
     // Default option: local network
     let choose_local = args_includes(['l', 'local']);
     let choose_testnet = args_includes(['t', 'testnet']);
+    let use_batches = args_includes(['b', 'batch']); 
   
     console.log(`Local: ${choose_local} - testnet: ${choose_testnet}`);
   
@@ -78,12 +79,18 @@
     } else {
       tx_type = 'avt_transfer';
     }
-    
+  
+    if (tx_type === 'avt_transfer' && use_batches) {
+      console.log("Selected batch option can only be used with proxied transfers. Batching option will be IGNORED.");
+      use_batches = false;
+    }
+
     return {
         number_of_tx,
         local_network: choose_local || !choose_testnet,
         target_tps,
         tx_type,
+        use_batches,
     };
   }
   
