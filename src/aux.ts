@@ -240,7 +240,6 @@ async function report_substrate_diagnostics(api: ApiPromise, initialTime: any, f
         }
     }
 
-    console.log(`Options: ${options.batch_multiplier}`);
     let tps = (total_transactions * options.batch_multiplier * 1000) / diff;
     
     console.log(`TPS from ${total_blocks} blocks: ${tps}`);
