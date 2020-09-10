@@ -20,6 +20,7 @@ async function getBlockStats(api: ApiPromise, event_section: string[], hash?: Bl
     let selected_extrinsics = signedBlock.block.extrinsics.filter(
         ({ method: { methodName, sectionName } }) => event_section.includes(sectionName));
 
+    let transactions_size = selected_extrinsics.map(ex => ex.encodedLength).reduce((previous, current) => previous + current, 0);
 
     return {
         date,
@@ -170,9 +171,11 @@ async function pre_generate_proxied_batches(api: ApiPromise, context: any, param
                 
                 let transfer;
 
+                transfer = await avn.prepare_proxied_transfer(api, sender, receiver, relayer, 1);
                 sender.nonce = sender.nonce.add(avn.ONE);
                 
                 batch.push(transfer);
+                sanityCounter++;
             }           
         }
         
