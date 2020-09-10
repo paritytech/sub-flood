@@ -16,6 +16,7 @@ async function run() {
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
 
     let TOTAL_THREADS = 10;
+    let TOTAL_THREADS = 1;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
 
     let TOTAL_USERS = TPS;
