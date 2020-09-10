@@ -15,7 +15,6 @@ async function run() {
     let TPS = options.target_tps || 1000;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
 
-    let TOTAL_THREADS = 10;
     let TOTAL_THREADS = 1;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
 
