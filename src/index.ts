@@ -1,3 +1,4 @@
+//This is a test commit
 import {Keyring} from "@polkadot/keyring";
 import {ApiPromise, WsProvider} from "@polkadot/api";
 import {KeyringPair} from "@polkadot/keyring/types";
@@ -8,7 +9,7 @@ import * as avn from "./avn_helper";
 import * as cli from "./cli";
 
 async function run() {
- 
+
     let options = cli.execution_options();
 
     let TOTAL_TRANSACTIONS = options.number_of_tx || 25000;
@@ -38,43 +39,43 @@ async function run() {
 
     let [api, keyring, named_account_suris] = await avn.setup(options.local_network);
     let account_data = await avn.setup_accounts(api, keyring, named_account_suris, TOTAL_USERS);
-    
+
     let initial_balances = await aux.report_balances(api, account_data.named_accounts, "before endowment");
     await aux.endow_users(api, account_data.named_accounts, account_data.numbered_accounts, options.tx_type, TOTAL_BATCHES);
 
     await aux.pending_transactions_cleared(api, 0);
     console.log(".");
     await aux.report_balances(api, account_data.named_accounts, "post endowment");
-    
+
     let use_batches = options.use_batches;
 
     let initialTime;
 
     if (use_batches) {
         let batches = await aux.pre_generate_proxied_batches(
-            api, 
-            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
-            global_params);  
+            api,
+            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type},
+            global_params);
 
 
-        
+
 
         await aux.pending_transactions_cleared(api, 0);
-    
+
     	initialTime = new Date();
-        await aux.send_proxied_batches(batches, global_params);          
+        await aux.send_proxied_batches(batches, global_params);
     } else {
         let thread_payloads = await aux.pre_generate_tx(
             api,
-            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type}, 
+            {named_accounts: account_data.named_accounts, numbered_accounts: account_data.numbered_accounts, tx_type: options.tx_type},
             global_params);
-      
-    
+
+
         await aux.pending_transactions_cleared(api, 0);
         console.log("..");
-    
+
         initialTime = new Date();
-	await aux.send_transactions(thread_payloads, global_params);      
+	await aux.send_transactions(thread_payloads, global_params);
     }
 
     await aux.pending_transactions_cleared(api, 20);
@@ -89,7 +90,7 @@ async function run() {
         batch_multiplier = TOTAL_TRANSACTIONS / TOTAL_BATCHES;
     }
 
-    await aux.report_substrate_diagnostics(api, initialTime, finalTime, {tx_type: options.tx_type, use_batches: options.use_batches, batch_multiplier});  
+    await aux.report_substrate_diagnostics(api, initialTime, finalTime, {tx_type: options.tx_type, use_batches: options.use_batches, batch_multiplier});
 }
 
 // run();
