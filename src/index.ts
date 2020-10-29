@@ -37,6 +37,9 @@ async function run() {
     let TOTAL_USERS = TPS;
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
     let TOKENS_TO_SEND = 1;
+    let MEASURE_FINALISATION = true;
+    let FINALISATION_TIMEOUT = 20000; // 20 seconds
+    let FINALISATION_ATTEMPTS = 5;
 
     let provider = new WsProvider(WS_URL);
 
@@ -84,7 +87,7 @@ async function run() {
     console.log("All users endowed from Alice account!");
 
     console.log("Wait for transactions finalisation");
-    await new Promise(r => setTimeout(r, 20000));
+    await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
     console.log(`Finalized transactions ${finalized_transactions}`);
 
     if (finalized_transactions < TOTAL_USERS + 1) {
@@ -118,6 +121,10 @@ async function run() {
 
     let nextTime = new Date().getTime();
     let initialTime = new Date();
+    const finalisationTime = new Uint32Array(new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT));
+    finalisationTime[0] = 0;
+    const finalisedTxs = new Uint16Array(new SharedArrayBuffer(Uint16Array.BYTES_PER_ELEMENT));
+    finalisedTxs[0] = 0;
 
     for (var batchNo = 0; batchNo < TOTAL_BATCHES; batchNo++) {
 
@@ -136,7 +143,15 @@ async function run() {
                 batchPromises.push(
                     new Promise<number>(async resolve => {
                         let transaction = thread_payloads[threadNo][batchNo][transactionNo];
-                        resolve(await transaction.send().catch((err: any) => {
+                        resolve(await transaction.send(({ status }) => {
+                            if (status.isFinalized) {
+                                Atomics.add(finalisedTxs, 0, 1);
+                                let finalisationTimeCurrent = new Date().getTime() - initialTime.getTime();
+                                if (finalisationTimeCurrent > Atomics.load(finalisationTime, 0)) {
+                                    Atomics.store(finalisationTime, 0, finalisationTimeCurrent);
+                                }
+                            }
+                        }).catch((err: any) => {
                             errors.push(err);
                             return -1;
                         }));
@@ -169,7 +184,29 @@ async function run() {
 
     let tps = (total_transactions * 1000) / diff;
 
-    console.log(`TPS from ${total_blocks} blocks: ${tps}`)
+    console.log(`TPS from ${total_blocks} blocks: ${tps}`);
+
+    if (MEASURE_FINALISATION) {
+        let break_condition = false;
+        let attempt = 0;
+        while (!break_condition) {
+            console.log(`Wait ${FINALISATION_TIMEOUT} ms for transactions finalisation, attempt ${attempt} out of ${FINALISATION_ATTEMPTS}`);
+            await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
+
+            if (Atomics.load(finalisedTxs, 0) < TOTAL_TRANSACTIONS) {
+                if (attempt == FINALISATION_ATTEMPTS) {
+                    console.log(`Finalized only ${Atomics.load(finalisedTxs, 0)} out of ${TOTAL_TRANSACTIONS}, time limit for finalisation reached, breaking...`);
+                    break_condition = true;
+                } else {
+                    attempt++;
+                }
+            } else {
+                break_condition = true;
+            }
+        }
+        let finalizedTps = (Atomics.load(finalisedTxs, 0) * 1000) / Atomics.load(finalisationTime, 0);
+        console.log(`Finalized TPS ${finalizedTps}`);
+    }
 }
 
 run().then(function() {
