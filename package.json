@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "awesome-typescript-loader": "^5.2.1",
+    "minimist": "^1.2.3",
     "source-map-support": "^0.5.19",
     "typescript": "^4.0.5",
     "uglifyjs-webpack-plugin": "^2.2.0",

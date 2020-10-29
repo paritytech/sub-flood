@@ -26,20 +26,20 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
 }
 
 async function run() {
+    var argv = require('minimist')(process.argv.slice(2));
 
-    let TOTAL_TRANSACTIONS = 25000;
-    let TPS = 100;
-    let TOTAL_THREADS = 10;
-    let TRANSACTIONS_PER_THREAD = TOTAL_TRANSACTIONS/TOTAL_THREADS;
+    let TOTAL_TRANSACTIONS = argv.total_transactions ? argv.total_transactions : 25000;
+    let TPS = argv.tps ? argv.tps : 100;
+    let TOTAL_THREADS = argv.total_threads ? argv.total_threads : 10;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
-    let WS_URL = "ws://localhost:9944";
+    let WS_URL = argv.url ? argv.url : "ws://localhost:9944";
     let TOTAL_USERS = TPS;
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
     let TOKENS_TO_SEND = 1;
-    let MEASURE_FINALISATION = true;
-    let FINALISATION_TIMEOUT = 20000; // 20 seconds
-    let FINALISATION_ATTEMPTS = 5;
+    let MEASURE_FINALISATION = argv.finalisation ? argv.finalisation : false;
+    let FINALISATION_TIMEOUT = argv.finalisation_timeout ? argv.finalisation_timeout : 20000; // 20 seconds
+    let FINALISATION_ATTEMPTS = argv.finalisation_attempts ? argv.finalisation_attempts : 5;
 
     let provider = new WsProvider(WS_URL);
 
