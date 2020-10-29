@@ -61,21 +61,35 @@ async function run() {
     let keyPairs = new Map<number, KeyringPair>()
     console.log("Alice nonce is " + aliceNonce);
 
+    let finalized_transactions = 0;
+
     for (let seed = 0; seed <= TOTAL_USERS; seed++) {
         let keypair = keyring.addFromUri(seedFromNum(seed));
         keyPairs.set(seed, keypair);
 
         // should be greater than existential deposit.
-        let transfer = api.tx.balances.transfer(keypair.address, '100000000000000000');
+        let transfer = api.tx.balances.transfer(keypair.address, 10 * api.consts.balances.existentialDeposit.toNumber());
 
         let receiverSeed = seedFromNum(seed);
         console.log(
             `Alice -> ${receiverSeed} (${keypair.address})`
         );
-        await transfer.signAndSend(aliceKeyPair, { nonce: aliceNonce });
+        await transfer.signAndSend(aliceKeyPair, { nonce: aliceNonce }, ({ status }) => {
+            if (status.isFinalized) {
+                finalized_transactions++;
+            }
+        });
         aliceNonce ++;
     }
     console.log("All users endowed from Alice account!");
+
+    console.log("Wait for transactions finalisation");
+    await new Promise(r => setTimeout(r, 20000));
+    console.log(`Finalized transactions ${finalized_transactions}`);
+
+    if (finalized_transactions < TOTAL_USERS + 1) {
+        throw Error(`Not all transactions finalized`);
+    }
 
     console.log(`Pregenerating ${TOTAL_TRANSACTIONS} transactions across ${TOTAL_THREADS} threads...`);
     var thread_payloads: any[][][] = [];
@@ -115,7 +129,7 @@ async function run() {
 
         var errors = [];
 
-        console.log(`Staring batch #${batchNo}`);
+        console.log(`Starting batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
         for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
             for (let transactionNo = 0; transactionNo < TRANSACTION_PER_BATCH; transactionNo++) {
