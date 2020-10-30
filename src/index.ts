@@ -29,7 +29,7 @@ async function run() {
     var argv = require('minimist')(process.argv.slice(2));
 
     let TOTAL_TRANSACTIONS = argv.total_transactions ? argv.total_transactions : 25000;
-    let TPS = argv.tps ? argv.tps : 100;
+    let TPS = argv.scale ? argv.scale : 100;
     let TOTAL_THREADS = argv.total_threads ? argv.total_threads : 10;
     let TOTAL_BATCHES = TOTAL_TRANSACTIONS/TPS;
     let TRANSACTION_PER_BATCH = TPS / TOTAL_THREADS;
@@ -37,9 +37,9 @@ async function run() {
     let TOTAL_USERS = TPS;
     let USERS_PER_THREAD = TOTAL_USERS / TOTAL_THREADS;
     let TOKENS_TO_SEND = 1;
-    let MEASURE_FINALISATION = argv.finalisation ? argv.finalisation : false;
-    let FINALISATION_TIMEOUT = argv.finalisation_timeout ? argv.finalisation_timeout : 20000; // 20 seconds
-    let FINALISATION_ATTEMPTS = argv.finalisation_attempts ? argv.finalisation_attempts : 5;
+    let MEASURE_FINALISATION = argv.finalization ? argv.finalization : false;
+    let FINALISATION_TIMEOUT = argv.finalization_timeout ? argv.finalization_timeout : 20000; // 20 seconds
+    let FINALISATION_ATTEMPTS = argv.finalization_attempts ? argv.finalization_attempts : 5;
 
     let provider = new WsProvider(WS_URL);
 
