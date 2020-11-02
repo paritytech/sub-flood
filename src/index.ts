@@ -195,7 +195,7 @@ async function run() {
 
             if (Atomics.load(finalisedTxs, 0) < TOTAL_TRANSACTIONS) {
                 if (attempt == FINALISATION_ATTEMPTS) {
-                    console.log(`Finalized only ${Atomics.load(finalisedTxs, 0)} out of ${TOTAL_TRANSACTIONS}, time limit for finalisation reached, breaking...`);
+                    // time limit reached
                     break_condition = true;
                 } else {
                     attempt++;
@@ -204,8 +204,7 @@ async function run() {
                 break_condition = true;
             }
         }
-        let finalizedTps = (Atomics.load(finalisedTxs, 0) * 1000) / Atomics.load(finalisationTime, 0);
-        console.log(`Finalized TPS ${finalizedTps}`);
+        console.log(`Finalized ${Atomics.load(finalisedTxs, 0)} out of ${TOTAL_TRANSACTIONS} transactions, finalization time was ${Atomics.load(finalisationTime, 0)}`);
     }
 }
 
