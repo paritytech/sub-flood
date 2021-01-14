@@ -13,7 +13,7 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
 
     // the hash for each extrinsic in the block
     let timestamp = signedBlock.block.extrinsics.find(
-        ({ method: { methodName, sectionName } }) => sectionName === 'timestamp' && methodName === 'set'
+        ({ method: { method, section } }) => section === 'timestamp' && method === 'set'
     )!.method.args[0].toString();
 
     let date = new Date(+timestamp);
@@ -43,7 +43,13 @@ async function run() {
 
     let provider = new WsProvider(WS_URL);
 
-    let api = await ApiPromise.create({provider});
+    let apiRequest = await Promise.race([
+        ApiPromise.create({provider}),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ]).catch(function(err) {
+        throw Error(`Timeout error: ` + err.toString());
+    });
+    let api = apiRequest as ApiPromise;
 
     let keyring = new Keyring({type: 'sr25519'});
 
