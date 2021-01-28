@@ -4,7 +4,8 @@ Flooding substrate node with transactions
 To run:
 
 ```
-npx tsc
+npm install
+npx tsc   # this will generate dist dir
 node dist/index.js
 ```
 
