@@ -1,5 +1,8 @@
 {
-  "name": "sub-bench",
+  "name": "sub-flood",
+  "bin": {
+    "sub-flood": "./bin/run"
+  },
   "version": "2.0.0",
   "description": "",
   "main": "index.ts",
