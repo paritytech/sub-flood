@@ -7,6 +7,7 @@ To run:
 # If you would like to use this script with a network simulation tool like 
 # "gurke" install this package golbbaly and the script will be available at 
 # user independet path  `/usr/local/lib/node_modules/sub-flood/dist/index.js`
+sudo npm install -g
 
 # This will generate dist dir which is needed in order for the script to run
 npx tsc   
