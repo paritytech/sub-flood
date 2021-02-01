@@ -4,8 +4,17 @@ Flooding substrate node with transactions
 To run:
 
 ```
-npm install
-npx tsc   # this will generate dist dir
+# If you would like to use this script with a network simulation tool like 
+# "gurke" install this package golbally and the script will be available at 
+# user independet path  `/usr/local/lib/node_modules/sub-flood/dist/index.js`
+sudo npm install -g
+
+# This will generate dist dir which is needed in order for the script to run
+npx tsc   
+
+# Run script with
+node /usr/local/lib/node_modules/sub-flood/dist/index.js
+# or
 node dist/index.js
 ```
 
