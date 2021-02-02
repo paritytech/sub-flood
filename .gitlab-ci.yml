@@ -78,7 +78,7 @@ test-sub-flood-image:
   needs:
     - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
   script:
-    - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+    - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
     - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container
 
 
