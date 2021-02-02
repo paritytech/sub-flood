@@ -8,12 +8,13 @@ stages:
 
 # pickle_rick = random name to replace sub-flood until we will have private docker repo
 test-sub-flood-cli-can-run-simple-test:
-  image:                           "paritytech/pickle_rick:latest"
+  image:                           "paritytech/sub-flood:latest"
   interruptible: true
   stage: test
   tags:
     - parity-sub-flood
-      #   script:
+  script:
+    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container"
       #     - echo "LOG INFO step 1"
       #     - gurke spawn -c examples/default_local_testnet.toml 2>&1 | tee gurke.log
       #     - namespace="$(grep -oE 'gurke-.*' gurke.log)"
