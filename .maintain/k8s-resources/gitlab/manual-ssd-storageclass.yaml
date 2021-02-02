@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd
+parameters:
+  type: pd-ssd
+provisioner: kubernetes.io/gce-pd
+reclaimPolicy: Retain
+# mountOptions:
+#   - dir_mode=0777
+#   - file_mode=0777
+#   - uid=65534
+#   - gid=65534
+allowVolumeExpansion: true
+

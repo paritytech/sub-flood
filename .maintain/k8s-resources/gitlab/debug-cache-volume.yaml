@@ -1,0 +1,23 @@
+# You can create this pod in the namespace where you cache volume runs to debug stuff
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sub-flood-cleanup-cache-pod
+spec:
+  containers:
+  - name: sub-flood-cleanup-cache
+    image: "quay.io/podman/stable"
+    imagePullPolicy: Always
+    command: ["/bin/sh"]
+    args: ["-c", "tail -f /dev/null"]
+    volumeMounts:
+    - name: sub-flood-cache-layers-storage
+      mountPath: /var/lib/containers
+      readOnly: false
+    securityContext:
+      privileged: true
+      
+  volumes:
+  - name: sub-flood-cache-layers-storage
+    persistentVolumeClaim:
+      claimName: sub-flood-ssd-gitlab-runner-cache
