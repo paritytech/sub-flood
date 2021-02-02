@@ -14,7 +14,7 @@ test-sub-flood-cli-can-run-simple-test:
   tags:
     - parity-sub-flood
   script:
-    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container"
+    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container
       #     - echo "LOG INFO step 1"
       #     - gurke spawn -c examples/default_local_testnet.toml 2>&1 | tee gurke.log
       #     - namespace="$(grep -oE 'gurke-.*' gurke.log)"
