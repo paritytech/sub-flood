@@ -1,9 +1,9 @@
 stages:
   - test
-    #   - build
-    #   - post-build
-    #   - post-merge
-    #   - cleanup
+  - build
+  - post-build
+  - post-merge
+  - cleanup
 
 
 # pickle_rick = random name to replace sub-flood until we will have private docker repo
