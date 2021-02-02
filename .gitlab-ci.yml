@@ -6,7 +6,6 @@ stages:
   - cleanup
 
 
-# pickle_rick = random name to replace sub-flood until we will have private docker repo
 test-sub-flood-cli-can-run-simple-test:
   image:                           "paritytech/sub-flood:latest"
   interruptible: true
