@@ -1,154 +1,128 @@
 stages:
   - test
-    #   - build
-    #   - post-build
-    #   - post-merge
-    #   - cleanup
+  - build
+  - post-build
+  - post-merge
+  - cleanup
 
 
-# pickle_rick = random name to replace sub-flood until we will have private docker repo
 test-sub-flood-cli-can-run-simple-test:
   image:                           "paritytech/sub-flood:latest"
-
   interruptible: true
   stage: test
   tags:
     - parity-sub-flood
   script:
-    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container"
+    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container
 
-      #     - echo "LOG INFO step 1"
-      #     - gurke spawn -c examples/default_local_testnet.toml 2>&1 | tee gurke.log
-      #     - namespace="$(grep -oE 'gurke-.*' gurke.log)"
-      #     - if test -z  "$namespace" ; then  
-      #          echo "'namespace' can't be empty" ; 
-      #          exit 1 ; 
-      #       else
-      #          echo "namespace is $namespace" ;
-      #       fi
-      #     - gurke tear-down "$namespace"
-      #     - echo "LOG INFO step 2 Sometimes namespaces do not get cleand up properly, needto wait a bit"
-      #     - sleep 15
-      #     - echo "LOG INFO step 3 TEST OK"
+build-sub-flood-image-and-push-temporarly-in-paritypr:
+  image:                           quay.io/podman/stable
+  tags:
+    - parity-sub-flood
+  variables:
+    # random name to replace sub-flood until we will have private docker repo 
+    CONTAINER_IMAGE:               paritypr/sub-flood
+  stage:                           build
+  before_script:
+    - test "$DOCKER_SIMNET_USER" -a "$DOCKER_SIMNET_PASS" ||
+        ( echo "No docker credentials provided"; exit 1 )
+  script:
+    - |
+      echo "LOG INFO step 4 build container image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
+      echo "$DOCKER_SIMNET_PASS" \
+           | podman login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
+      whoami
+      podman info
+      time podman run \
+        --volume .:/build  \
+        --volume /var/lib/containers/:/var/lib/containers \
+        --device /dev/fuse \
+        --privileged   \
+        quay.io/buildah/stable \
+            buildah bud  \
+              --layers=true  \
+              --cache-from  "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
+              --tag         "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
+              /build 
+      echo "LOG INFO step 5 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA built successfully"
+      echo "$DOCKER_SIMNET_PASS" \
+           | podman  login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
 
-      # build-sub-flood-image-and-push-temporarly-in-paritypr:
-      #   image:                           quay.io/podman/stable
-      #   tags:
-      #     - parity-sub-flood
-      #   variables:
-      #     # random name to replace sub-flood until we will have private docker repo 
-      #     CONTAINER_IMAGE:               paritypr/pickle_rick
-      #   stage:                           build
-      #   before_script:
-      #     - test "$DOCKER_SIMNET_USER" -a "$DOCKER_SIMNET_PASS" ||
-      #         ( echo "No docker credentials provided"; exit 1 )
-      #   script:
-      #     - |
-      #       echo "LOG INFO step 4 build container image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
-      #       echo "$DOCKER_SIMNET_PASS" \
-      #            | podman login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
-      #       whoami
-      #       podman info
-      #       time podman run \
-      #         --volume .:/build  \
-      #         --volume /var/lib/containers/:/var/lib/containers \
-      #         --device /dev/fuse \
-      #         --privileged   \
-      #         quay.io/buildah/stable \
-      #             buildah bud  \
-      #               --layers=true  \
-      #               --cache-from  "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-      #               --tag         "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-      #               /build 
-      #       echo "LOG INFO step 5 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA built successfully"
-      #       echo "$DOCKER_SIMNET_PASS" \
-      #            | podman  login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
-      # 
-      #       podman push --format=v2s2 "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
-      #       echo "LOG INFO step 6 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA pushed successfully"
-      # 
-      #       echo "LOG check if need to cleanup dangling images"
-      #       CACHE_USE_PERCENT="$(df -h | grep /var/lib/containers | awk '{printf $5}' | sed 's/%//g')"
-      #       test -n "$CACHE_USE_PERCENT" \
-      #               || ( echo "This variable can't be emtpy" ; exit 1 )
-      # 
-      #       if test "$CACHE_USE_PERCENT" -ge 80 ; then 
-      #         echo "LOG INFO need to cleanup cache, value: $CACHE_USE_PERCENT"
-      #         time podman rmi -f $(podman images -q -f "dangling=true")
-      #       else 
-      #         echo "LOG INFO No Cleanup needed this time value: $CACHE_USE_PERCENT"
-      #       fi
-      #   after_script:
-      #     - podman logout docker.io
-      # 
-      # 
-      # test-sub-flood-image:
-      #   variables:
-      #     CONTAINER_IMAGE:               paritypr/pickle_rick
-      #   image:                           "${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
-      #   interruptible:                   true
-      #   stage:                           post-build
-      #   tags:
-      #     - parity-sub-flood
-      #   needs:
-      #     - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
-      #   script:
-      #     - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
-      #     - sub-flood spawn -c examples/default_local_testnet.toml 2>&1 | tee sub-flood.log
-      #     - namespace="$(grep -oE 'sub-flood-.*' sub-flood.log)"
-      #     - if test -z  "$namespace" ; then  
-      #          echo "'namespace' can't be empty" ; 
-      #          exit 1 ; 
-      #       else
-      #          echo "namespace is $namespace" ;
-      #       fi
-      #     - sub-flood tear-down "$namespace"
-      #     - echo "LOG INFO step 7 Sometimes namespaces do not get cleand up properly, needto wait a bit"
-      #     - sleep 15
-      # 
-      # 
-      # push-simnet-image-to-paritytech:
-      #   stage:                           post-merge
-      #   needs:
-      #     - job:                         test-sub-flood-image
-      #   image:                           quay.io/buildah/stable
-      #   rules:
-      #     - if: '$CI_COMMIT_BRANCH == "main"'
-      #   tags:
-      #     - parity-sub-flood
-      #   before_script:
-      #     - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
-      #         ( echo "no docker credentials provided"; exit 1 )
-      #   script:
-      #     - echo "LOG INFO step 7 update paritytech/pickle_rick:latest"
-      #     - echo "$Docker_Hub_Pass_Parity" |
-      #         buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
-      #     - buildah info
-      #     - 'buildah pull "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA"'
-      #     - 'buildah tag "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA" paritytech/pickle_rick:latest'
-      #     - 'buildah push --format=v2s2 paritytech/pickle_rick:latest'
-      #   after_script:
-      #     - buildah logout docker.io
-      # 
-      # 
-      # cleanup-temp-image-from-paritypr:
-      #   image:                           'paritytech/pickle_rick:latest'
-      #   stage:                           'cleanup'
-      #   needs:
-      #     - job:                         'push-simnet-image-to-paritytech'
-      #   rules:
-      #     - if: '$CI_COMMIT_BRANCH == "main"'
-      #   tags:
-      #     - parity-sub-flood
-      #   before_script:
-      #     - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
-      #         ( echo "no docker credentials provided"; exit 1 )
-      #   script:
-      #     - echo "LOG INFO step 8 Cleanup PR image"
-      #     - 'TOKEN=$(curl -s -H "Content-Type: application/json"
-      #                    -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\": \"$DOCKER_SIMNET_PASS\" }"
-      #                    "https://hub.docker.com/v2/users/login/"
-      #                    | jq -r .token)'
-      #     - 'curl -Xi DELETE
-      #             -H "Authorization: JWT $TOKEN"
-      #             "https://hub.docker.com/v2/repositories/paritypr/pickle_rick/tags/$CI_COMMIT_SHORT_SHA/"'
+      podman push --format=v2s2 "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
+      echo "LOG INFO step 6 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA pushed successfully"
+
+      echo "LOG check if need to cleanup dangling images"
+      CACHE_USE_PERCENT="$(df -h | grep /var/lib/containers | awk '{printf $5}' | sed 's/%//g')"
+      test -n "$CACHE_USE_PERCENT" \
+              || ( echo "This variable can't be emtpy" ; exit 1 )
+
+      if test "$CACHE_USE_PERCENT" -ge 80 ; then 
+        echo "LOG INFO need to cleanup cache, value: $CACHE_USE_PERCENT"
+        time podman rmi -f $(podman images -q -f "dangling=true")
+      else 
+        echo "LOG INFO No Cleanup needed this time value: $CACHE_USE_PERCENT"
+      fi
+  after_script:
+    - podman logout docker.io
+
+
+test-sub-flood-image:
+  variables:
+    CONTAINER_IMAGE:               paritypr/sub-flood
+  image:                           "${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+  interruptible:                   true
+  stage:                           post-build
+  tags:
+    - parity-sub-flood
+  needs:
+    - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
+  script:
+    - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
+    - /home/nonroot/gurke/run-test-scripts/run-gurke-external-tool-test.sh --container
+
+
+push-simnet-image-to-paritytech:
+  stage:                           post-merge
+  needs:
+    - job:                         test-sub-flood-image
+  image:                           quay.io/buildah/stable
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - parity-sub-flood
+  before_script:
+    - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
+        ( echo "no docker credentials provided"; exit 1 )
+  script:
+    - echo "LOG INFO step 7 update paritytech/pickle_rick:latest"
+    - echo "$Docker_Hub_Pass_Parity" |
+        buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
+    - buildah info
+    - 'buildah pull "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA"'
+    - 'buildah tag "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA" paritytech/pickle_rick:latest'
+    - 'buildah push --format=v2s2 paritytech/pickle_rick:latest'
+  after_script:
+    - buildah logout docker.io
+
+
+cleanup-temp-image-from-paritypr:
+  image:                           'paritytech/sub-flood:latest'
+  stage:                           'cleanup'
+  needs:
+    - job:                         'push-simnet-image-to-paritytech'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - parity-sub-flood
+  before_script:
+    - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
+        ( echo "no docker credentials provided"; exit 1 )
+  script:
+    - echo "LOG INFO step 8 Cleanup PR image"
+    - 'TOKEN=$(curl -s -H "Content-Type: application/json"
+                   -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\": \"$DOCKER_SIMNET_PASS\" }"
+                   "https://hub.docker.com/v2/users/login/"
+                   | jq -r .token)'
+    - 'curl -Xi DELETE
+            -H "Authorization: JWT $TOKEN"
+            "https://hub.docker.com/v2/repositories/paritypr/pickle_rick/tags/$CI_COMMIT_SHORT_SHA/"'
