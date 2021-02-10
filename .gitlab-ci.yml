@@ -33,6 +33,7 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
            | podman login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
       whoami
       podman info
+      df -h | grep /var/lib/containers
       time podman run \
         --volume .:/build  \
         --volume /var/lib/containers/:/var/lib/containers \
@@ -52,7 +53,8 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
       echo "LOG INFO step 6 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA pushed successfully"
 
       echo "LOG check if need to cleanup dangling images"
-      CACHE_USE_PERCENT="$(df -h | grep /var/lib/containers | awk '{printf $5}' | sed 's/%//g')"
+      df -h | grep /var/lib/containers
+      CACHE_USE_PERCENT="$(df -h | grep -vE '/var/lib/containers/.*' | grep /var/lib/containers | awk '{print $5}' | sed 's/%//g')"
       test -n "$CACHE_USE_PERCENT" \
               || ( echo "This variable can't be emtpy" ; exit 1 )
 

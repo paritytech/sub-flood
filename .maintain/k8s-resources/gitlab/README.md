@@ -1,4 +1,3 @@
-
 # How to install gitlab runner in k8s cluster
 
 ### How to add a k8s cluster in gitlab official docs.
@@ -64,6 +63,7 @@ runners:
   ## Namespace to run Kubernetes jobs in (defaults to 'default')
   ##
   namespace: kube-system
+
 
 
 ```
