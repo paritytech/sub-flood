@@ -143,6 +143,12 @@ runners:
         [[runners.kubernetes.volumes.pvc]]
           name = "sub-flood-ssd-gitlab-runner-cache"
           mount_path = "/var/lib/containers"
+        [[runners.kubernetes.volumes.secret]]
+          name = "gurke-service-json-key"
+          mount_path = "/etc/gurke/"
+          read_only = true
+          [runners.kubernetes.volumes.secret.items]
+            "gurke-service-json-key" = "gurke-service-key.json"
 
 
   ## Default container image to use for builds when none is specified
