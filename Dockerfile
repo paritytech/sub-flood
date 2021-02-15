@@ -1,8 +1,8 @@
-FROM paritytech/pickle_rick:latest as gurke
+FROM paritytech/pickle_rick:latest
 USER root
 WORKDIR /root
 
-COPY --from=gurke /home/nonroot/gurke /home/nonroot/gurke
+COPY --from=paritytech/pickle_rick:latest /home/nonroot/gurke /home/nonroot/gurke
 
 RUN apt-get update --fix-missing && \
     apt-get install -y nodejs npm
