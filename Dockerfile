@@ -7,6 +7,7 @@ COPY --from=gurke /home/nonroot/gurke /home/nonroot/gurke
 RUN apt-get update --fix-missing && \
     apt-get install -y nodejs npm
 
+
 RUN npm i npm@latest -g
 
 WORKDIR /home/nonroot/sub-flood
