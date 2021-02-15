@@ -110,7 +110,7 @@ cleanup-temp-image-from-paritypr:
   image:                           'paritytech/sub-flood:latest'
   stage:                           'cleanup'
   needs:
-    - job:                         'push-simnet-image-to-paritytech'
+    - job:                         'push-sub-flood-image-to-paritytech'
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
