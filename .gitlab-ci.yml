@@ -82,7 +82,9 @@ test-sub-flood-image:
     - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
     - /home/nonroot/gurke/run-test-scripts/run-gurke-test.sh --container --testdir=external-tools
 
-push-simnet-image-to-paritytech:
+push-sub-flood-image-to-paritytech:
+  variables:
+    CONTAINER_IMAGE:               paritypr/sub-flood
   stage:                           post-merge
   needs:
     - job:                         test-sub-flood-image
@@ -99,8 +101,8 @@ push-simnet-image-to-paritytech:
     - echo "$Docker_Hub_Pass_Parity" |
         buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
     - buildah info
-    - 'buildah pull "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA"'
-    - 'buildah tag "paritypr/pickle_rick:$CI_COMMIT_SHORT_SHA" paritytech/pickle_rick:latest'
+    - 'buildah pull "${CONTAINER_IMAGE}:$CI_COMMIT_SHORT_SHA"'
+    - 'buildah tag "${CONTAINER_IMAGE}:$CI_COMMIT_SHORT_SHA" ${CONTAINER_IMAGE}:latest'
     - 'buildah push --format=v2s2 paritytech/pickle_rick:latest'
   after_script:
     - buildah logout docker.io
@@ -126,4 +128,4 @@ cleanup-temp-image-from-paritypr:
                    | jq -r .token)'
     - 'curl -Xi DELETE
             -H "Authorization: JWT $TOKEN"
-            "https://hub.docker.com/v2/repositories/paritypr/pickle_rick/tags/$CI_COMMIT_SHORT_SHA/"'
+            "https://hub.docker.com/v2/repositories/paritypr/sub-flood/tags/$CI_COMMIT_SHORT_SHA/"'
