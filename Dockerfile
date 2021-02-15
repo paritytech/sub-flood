@@ -4,12 +4,10 @@ WORKDIR /root
 
 COPY --from=gurke /home/nonroot/gurke /home/nonroot/gurke
 
-
 RUN apt-get update --fix-missing && \
     apt-get install -y nodejs npm
 
 RUN npm i npm@latest -g
-
 
 WORKDIR /home/nonroot/sub-flood
 # Global npm dependencies
@@ -51,4 +49,3 @@ ENTRYPOINT ["tini", "--", "bash"]
 #             --privileged   \
 #              paritytech/pickle_rick:latest  \
 #                 ./run-test-scripts/run-gurke-test.sh --container --testdir=features
-
