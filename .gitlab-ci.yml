@@ -5,7 +5,6 @@ stages:
   - post-merge
   - cleanup
 
-
 test-sub-flood-cli-can-run-simple-test:
   image:                           "paritytech/sub-flood:latest"
   interruptible: true
