@@ -27,7 +27,7 @@ helm install gitlab-runner  \
 helm pull gitlab/gitlab-runner --untar
 
 # Push changes 
-helm upgrade gitlab-runner gitlab/gitlab-runner  \
+helm upgrade sub-flood-gitlab-runner gitlab/gitlab-runner  \
      -f values.yaml \
      --namespace gitlab-sub-flood-ci
 
