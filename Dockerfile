@@ -7,7 +7,6 @@ COPY --from=paritytech/pickle_rick:latest /home/nonroot/gurke /home/nonroot/gurk
 RUN apt-get update --fix-missing && \
     apt-get install -y nodejs npm
 
-
 RUN npm i npm@latest -g
 
 WORKDIR /home/nonroot/sub-flood

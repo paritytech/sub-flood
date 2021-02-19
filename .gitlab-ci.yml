@@ -5,7 +5,16 @@ stages:
   - post-merge
   - cleanup
 
+
+
+variables:                         &global-vars
+  FF_GITLAB_REGISTRY_HELPER_IMAGE:   'true'
+
+
+
 test-sub-flood-cli-can-run-simple-test:
+  variables:
+    <<:                            *global-vars
   image:                           "paritytech/sub-flood:latest"
   interruptible: true
   stage: test
@@ -15,6 +24,8 @@ test-sub-flood-cli-can-run-simple-test:
     - /home/nonroot/gurke/run-test-scripts/run-gurke-test.sh --container --testdir=external-tools
 
 build-sub-flood-image-and-push-temporarly-in-paritypr:
+  variables:
+    <<:                            *global-vars
   image:                           quay.io/podman/stable
   tags:
     - parity-sub-flood
@@ -69,6 +80,8 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
 
 test-sub-flood-image:
   variables:
+    <<:                            *global-vars
+  variables:
     CONTAINER_IMAGE:               paritypr/sub-flood
   image:                           "${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
   interruptible:                   true
@@ -82,6 +95,8 @@ test-sub-flood-image:
     - /home/nonroot/gurke/run-test-scripts/run-gurke-test.sh --container --testdir=external-tools
 
 push-sub-flood-image-to-paritytech:
+  variables:
+    <<:                            *global-vars
   stage:                           post-merge
   needs:
     - job:                         test-sub-flood-image
@@ -106,6 +121,8 @@ push-sub-flood-image-to-paritytech:
 
 
 cleanup-temp-image-from-paritypr:
+  variables:
+    <<:                            *global-vars
   image:                           'paritytech/sub-flood:latest'
   stage:                           'cleanup'
   needs:
