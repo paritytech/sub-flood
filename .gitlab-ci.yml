@@ -21,7 +21,7 @@ test-sub-flood-cli-can-run-simple-test:
   tags:
     - parity-sub-flood
   script:
-    - /home/nonroot/gurke/run-test-scripts/run-gurke-test.sh --container --testdir=external-tools
+    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-external-tool-test.sh
 
 build-sub-flood-image-and-push-temporarly-in-paritypr:
   variables:
@@ -92,7 +92,7 @@ test-sub-flood-image:
     - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
   script:
     - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
-    - /home/nonroot/gurke/run-test-scripts/run-gurke-test.sh --container --testdir=external-tools
+    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-external-tool-test.sh
 
 push-sub-flood-image-to-paritytech:
   variables:
