@@ -25,6 +25,11 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
     }
 }
 
+async function printCurrentBestBlock(api: ApiPromise) {
+    const signedBlock = await api.rpc.chain.getBlock();
+    console.log(`Current best block is ${signedBlock.block.header.number}`);
+}
+
 async function run() {
     var argv = require('minimist')(process.argv.slice(2));
 
@@ -55,6 +60,8 @@ async function run() {
 
     let nonces = [];
 
+    printCurrentBestBlock(api);
+
     console.log("Fetching nonces for accounts...");
     for (let i = 0; i <= TOTAL_USERS; i++) {
         let stringSeed = seedFromNum(i);
@@ -63,6 +70,8 @@ async function run() {
         nonces.push(nonce)
     }
     console.log("All nonces fetched!");
+
+    printCurrentBestBlock(api);
 
     console.log("Endowing all users from Alice account...");
     let aliceKeyPair = keyring.addFromUri("//Alice");
@@ -92,9 +101,13 @@ async function run() {
     }
     console.log("All users endowed from Alice account!");
 
+    printCurrentBestBlock(api);
+
     console.log("Wait for transactions finalisation");
     await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
     console.log(`Finalized transactions ${finalized_transactions}`);
+
+    printCurrentBestBlock(api);
 
     if (finalized_transactions < TOTAL_USERS + 1) {
         throw Error(`Not all transactions finalized`);
@@ -125,6 +138,8 @@ async function run() {
     }
     console.log(`Done pregenerating transactions (${sanityCounter}).`);
 
+    printCurrentBestBlock(api);
+
     let nextTime = new Date().getTime();
     let initialTime = new Date();
     const finalisationTime = new Uint32Array(new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT));
@@ -142,6 +157,7 @@ async function run() {
 
         var errors = [];
 
+        printCurrentBestBlock(api);
         console.log(`Starting batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
         for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
@@ -178,6 +194,7 @@ async function run() {
     var total_transactions = 0;
     var total_blocks = 0;
     var latest_block = await getBlockStats(api);
+    printCurrentBestBlock(api);
     console.log(`latest block: ${latest_block.date}`);
     console.log(`initial time: ${initialTime}`);
     for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, latest_block.parent)) {
@@ -192,10 +209,13 @@ async function run() {
 
     console.log(`TPS from ${total_blocks} blocks: ${tps}`);
 
+    printCurrentBestBlock(api);
+
     if (MEASURE_FINALISATION) {
         let break_condition = false;
         let attempt = 0;
         while (!break_condition) {
+            printCurrentBestBlock(api);
             console.log(`Wait ${FINALISATION_TIMEOUT} ms for transactions finalisation, attempt ${attempt} out of ${FINALISATION_ATTEMPTS}`);
             await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
 
