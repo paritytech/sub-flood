@@ -1,15 +1,11 @@
 stages:
-  - test
   - build
   - post-build
   - post-merge
   - cleanup
 
-
-
 variables:                         &global-vars
   FF_GITLAB_REGISTRY_HELPER_IMAGE:   'true'
-
 
 
 test-sub-flood-cli-can-run-simple-test:
@@ -17,11 +13,12 @@ test-sub-flood-cli-can-run-simple-test:
     <<:                            *global-vars
   image:                           "paritytech/sub-flood:latest"
   interruptible: true
-  stage: test
+  stage: build
   tags:
     - parity-sub-flood
   script:
     - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-external-tool-test.sh
+  retry: 2
 
 build-sub-flood-image-and-push-temporarly-in-paritypr:
   variables:
@@ -74,9 +71,9 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
       else 
         echo "LOG INFO No Cleanup needed this time value: $CACHE_USE_PERCENT"
       fi
+  retry: 1
   after_script:
     - podman logout docker.io
-
 
 test-sub-flood-image:
   variables:
@@ -93,16 +90,19 @@ test-sub-flood-image:
   script:
     - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
     - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-external-tool-test.sh
+  retry: 2
 
 push-sub-flood-image-to-paritytech:
   variables:
     <<:                            *global-vars
+    UPSTREAM_BUILD_TRIGGER:        $BUILD_SUBFLOOD
   stage:                           post-merge
   needs:
     - job:                         test-sub-flood-image
   image:                           quay.io/buildah/stable
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$BUILD_SUBFLOOD == "true"'
   tags:
     - parity-sub-flood
   before_script:
@@ -123,12 +123,14 @@ push-sub-flood-image-to-paritytech:
 cleanup-temp-image-from-paritypr:
   variables:
     <<:                            *global-vars
+    UPSTREAM_BUILD_TRIGGER:        $BUILD_SUBFLOOD
   image:                           'paritytech/sub-flood:latest'
   stage:                           'cleanup'
   needs:
     - job:                         'push-sub-flood-image-to-paritytech'
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$BUILD_SUBFLOOD == "true"'
   tags:
     - parity-sub-flood
   before_script:
