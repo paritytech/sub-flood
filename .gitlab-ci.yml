@@ -101,7 +101,7 @@ push-sub-flood-image-to-paritytech:
   image:                           quay.io/buildah/stable
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$BUILD_SUBFLOOD == "true"'
+    - if: '$UPSTREAM_BUILD_TRIGGER == "true"'
   tags:
     - parity-sub-flood-build
   before_script:
@@ -118,7 +118,6 @@ push-sub-flood-image-to-paritytech:
   after_script:
     - buildah logout docker.io
 
-
 cleanup-temp-image-from-paritypr:
   variables:
     <<:                            *global-vars
@@ -129,7 +128,7 @@ cleanup-temp-image-from-paritypr:
     - job:                         'push-sub-flood-image-to-paritytech'
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$BUILD_SUBFLOOD == "true"'
+    - if: '$UPSTREAM_BUILD_TRIGGER == "true"'
   tags:
     - parity-sub-flood
   before_script:
