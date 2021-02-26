@@ -65,7 +65,7 @@ terminationGracePeriodSeconds: 3600
 ## Configure the maximum number of concurrent jobs
 ## ref: https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-global-section
 ##
-concurrent: 10
+concurrent: 1
 
 ## Defines in seconds how often to check GitLab for a new builds
 ## ref: https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-global-section
@@ -120,7 +120,7 @@ rbac:
   podSecurityPolicy:
     enabled: false
     resourceNames:
-    - sub-flood-gitlab-runner
+    - sub-flood-build-gitlab-runner
 
   ## Specify one or more imagePullSecrets used for pulling the runner image
   ##
@@ -140,13 +140,10 @@ runners:
     [[runners]]
       [runners.kubernetes]
         image = "ubuntu:16.04"
-        [[runners.kubernetes.volumes.secret]]
-          name = "gurke-service-json-key"
-          mount_path = "/etc/gurke/"
-          read_only = true
-          [runners.kubernetes.volumes.secret.items]
-            "gurke-service-json-key" = "gurke-service-key.json"
-
+        [[runners.kubernetes.volumes.pvc]]
+          name = "sub-flood-ssd-gitlab-runner-cache"
+          mount_path = "/var/lib/containers"
+          read_only = false
 
   ## Default container image to use for builds when none is specified
   ##
@@ -179,7 +176,7 @@ runners:
   ##
   ## ref: https://docs.gitlab.com/ce/ci/runners/#use-tags-to-limit-the-number-of-jobs-using-the-runner
   ##
-  tags: "parity-sub-flood"
+  tags: "parity-sub-flood-build"
 
   ## Specify if jobs without tags should be run.
   ## If not specified, Runner will default to true if no tags were specified. In other case it will
