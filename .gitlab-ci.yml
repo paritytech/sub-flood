@@ -127,19 +127,22 @@ cleanup-temp-image-from-paritypr:
   needs:
     - job:                         'push-sub-flood-image-to-paritytech'
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$UPSTREAM_BUILD_TRIGGER == "true"'
+    - if:  $CI_COMMIT_BRANCH == "master"
+    - if:  $UPSTREAM_BUILD_TRIGGER == "true"
   tags:
     - parity-sub-flood
   before_script:
     - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
         ( echo "no docker credentials provided"; exit 1 )
   script:
-    - echo "LOG INFO step 8 Cleanup PR image"
-    - 'TOKEN=$(curl -s -H "Content-Type: application/json"
-                   -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\": \"$DOCKER_SIMNET_PASS\" }"
-                   "https://hub.docker.com/v2/users/login/"
-                   | jq -r .token)'
-    - 'curl -Xi DELETE
-            -H "Authorization: JWT $TOKEN"
-            "https://hub.docker.com/v2/repositories/paritypr/sub-flood/tags/$CI_COMMIT_SHORT_SHA/"'
+    - |
+      echo "LOG INFO step 8 Cleanup PR image"
+      TOKEN=$(curl -s -H "Content-Type: application/json" \
+                   -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\":
+                   \"$DOCKER_SIMNET_PASS\" }" \
+                   "https://hub.docker.com/v2/users/login/" \
+                  | jq -r .token)
+
+      curl -i -X DELETE \
+           -H "Authorization: JWT $TOKEN" \
+           "https://hub.docker.com/v2/repositories/paritypr/sub-flood/tags/$CI_COMMIT_SHORT_SHA/"
