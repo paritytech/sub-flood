@@ -20,7 +20,7 @@ COPY src/ src/
 RUN npm install  typescript
 RUN npm install -g
 # This will generate dist dir which is needed in order for the script to run
-RUN npx tsc 
+RUN npm run build  
 
 RUN chown -R nonroot. /home/nonroot
 
