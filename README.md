@@ -10,7 +10,7 @@ To run:
 sudo npm install -g
 
 # This will generate dist dir which is needed in order for the script to run
-npx tsc   
+npm run build 
 
 # Run script with
 node /usr/local/lib/node_modules/sub-flood/dist/index.js
