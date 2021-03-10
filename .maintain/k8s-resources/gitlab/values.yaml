@@ -140,6 +140,7 @@ runners:
     [[runners]]
       [runners.kubernetes]
         image = "ubuntu:16.04"
+        pull_policy = "always"
         [[runners.kubernetes.volumes.secret]]
           name = "gurke-service-json-key"
           mount_path = "/etc/gurke/"
