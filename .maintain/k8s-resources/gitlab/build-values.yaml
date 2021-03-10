@@ -140,6 +140,7 @@ runners:
     [[runners]]
       [runners.kubernetes]
         image = "ubuntu:16.04"
+        pull_policy = "always"
         [[runners.kubernetes.volumes.pvc]]
           name = "sub-flood-ssd-gitlab-runner-cache"
           mount_path = "/var/lib/containers"
