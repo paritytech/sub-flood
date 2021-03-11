@@ -12,8 +12,6 @@ npm run build
 ln -s "$(pwd)"/dist/index.js /usr/local/bin/sub-flood
 
 # Run script with
-node /usr/local/lib/node_modules/sub-flood/dist/index.js
-# or
 node dist/index.js
 ```
 
