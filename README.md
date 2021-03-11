@@ -4,17 +4,14 @@ Flooding substrate node with transactions
 To run:
 
 ```
-# If you would like to use this script with a network simulation tool like 
-# "gurke" install this package golbally and the script will be available at 
-# user independet path  `/usr/local/lib/node_modules/sub-flood/dist/index.js`
-sudo npm install -g
-
 # This will generate dist dir which is needed in order for the script to run
 npm run build 
 
+# If you would like to use this script with a network simulation tool like 
+# "gurke" create a symlink of index.js of this package in a general purpose dir path
+ln -s "$(pwd)"/dist/index.js /usr/local/bin/sub-flood
+
 # Run script with
-node /usr/local/lib/node_modules/sub-flood/dist/index.js
-# or
 node dist/index.js
 ```
 

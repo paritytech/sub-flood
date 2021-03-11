@@ -4,10 +4,15 @@ WORKDIR /root
 
 COPY --from=paritytech/pickle_rick:latest /home/nonroot/gurke /home/nonroot/gurke
 
+# install nodejs 14.0 or >
+# https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+# install the Yarn package manager, copatible with nodejs 14 or >
+RUN curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 RUN apt-get update --fix-missing && \
-    apt-get install -y nodejs npm
+    apt-get install -y nodejs yarn
 
-RUN npm i npm@latest -g
 
 WORKDIR /home/nonroot/sub-flood
 # Global npm dependencies
@@ -18,9 +23,10 @@ COPY src/ src/
 
 # Script will be available at `/usr/local/lib/node_modules/sub-flood/dist/index.js`
 RUN npm install  typescript
-RUN npm install -g
 # This will generate dist dir which is needed in order for the script to run
 RUN npm run build  
+# place index.js in a place where gurke expects it
+RUN ln -s "$(pwd)"/dist/index.js /usr/local/bin/sub-flood
 
 RUN chown -R nonroot. /home/nonroot
 
