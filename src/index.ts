@@ -22,12 +22,8 @@ async function getBlockStats(api: ApiPromise, hash?: BlockHash | undefined): Pro
         date,
         transactions: signedBlock.block.extrinsics.length,
         parent: signedBlock.block.header.parentHash,
+        blockNumber: signedBlock.block.header.number,
     }
-}
-
-async function printCurrentBestBlock(api: ApiPromise) {
-    const signedBlock = await api.rpc.chain.getBlock();
-    console.log(`Current best block is ${signedBlock.block.header.number}`);
 }
 
 async function run() {
@@ -60,8 +56,6 @@ async function run() {
 
     let nonces = [];
 
-    printCurrentBestBlock(api);
-
     console.log("Fetching nonces for accounts...");
     for (let i = 0; i <= TOTAL_USERS; i++) {
         let stringSeed = seedFromNum(i);
@@ -70,8 +64,6 @@ async function run() {
         nonces.push(nonce)
     }
     console.log("All nonces fetched!");
-
-    printCurrentBestBlock(api);
 
     console.log("Endowing all users from Alice account...");
     let aliceKeyPair = keyring.addFromUri("//Alice");
@@ -101,13 +93,9 @@ async function run() {
     }
     console.log("All users endowed from Alice account!");
 
-    printCurrentBestBlock(api);
-
     console.log("Wait for transactions finalisation");
     await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
     console.log(`Finalized transactions ${finalized_transactions}`);
-
-    printCurrentBestBlock(api);
 
     if (finalized_transactions < TOTAL_USERS + 1) {
         throw Error(`Not all transactions finalized`);
@@ -138,8 +126,6 @@ async function run() {
     }
     console.log(`Done pregenerating transactions (${sanityCounter}).`);
 
-    printCurrentBestBlock(api);
-
     let nextTime = new Date().getTime();
     let initialTime = new Date();
     const finalisationTime = new Uint32Array(new SharedArrayBuffer(Uint32Array.BYTES_PER_ELEMENT));
@@ -157,7 +143,6 @@ async function run() {
 
         var errors = [];
 
-        printCurrentBestBlock(api);
         console.log(`Starting batch #${batchNo}`);
         let batchPromises = new Array<Promise<number>>();
         for (let threadNo = 0; threadNo < TOTAL_THREADS; threadNo++) {
@@ -194,13 +179,21 @@ async function run() {
     var total_transactions = 0;
     var total_blocks = 0;
     var latest_block = await getBlockStats(api);
-    printCurrentBestBlock(api);
     console.log(`latest block: ${latest_block.date}`);
     console.log(`initial time: ${initialTime}`);
-    for (; latest_block.date > initialTime; latest_block = await getBlockStats(api, latest_block.parent)) {
+    let prunedFlag = false;
+    for (; latest_block.date > initialTime; ) {
+        try {
+            latest_block = await getBlockStats(api, latest_block.parent);
+        } catch(err) {
+            console.log("Cannot retrieve block info with error: " + err.toString());
+            console.log("Most probably the state is pruned already, stopping");
+            prunedFlag = true;
+            break;
+        }
         if (latest_block.date < finalTime) {
-            console.log(`block at ${latest_block.date}: ${latest_block.transactions} transactions`);
-            total_transactions  += latest_block.transactions;
+            console.log(`block number ${latest_block.blockNumber}: ${latest_block.transactions} transactions`);
+            total_transactions += latest_block.transactions;
             total_blocks ++;
         }
     }
@@ -209,13 +202,10 @@ async function run() {
 
     console.log(`TPS from ${total_blocks} blocks: ${tps}`);
 
-    printCurrentBestBlock(api);
-
-    if (MEASURE_FINALISATION) {
+    if (MEASURE_FINALISATION && !prunedFlag) {
         let break_condition = false;
         let attempt = 0;
         while (!break_condition) {
-            printCurrentBestBlock(api);
             console.log(`Wait ${FINALISATION_TIMEOUT} ms for transactions finalisation, attempt ${attempt} out of ${FINALISATION_ATTEMPTS}`);
             await new Promise(r => setTimeout(r, FINALISATION_TIMEOUT));
 
