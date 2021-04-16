@@ -28,6 +28,7 @@
 "@polkadot/api@4.1.1", "@polkadot/api@^4.1.1":
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-4.1.1.tgz#8310789d3fbbadfc0c39b305c341c8f5b67ff0b9"
+  integrity sha512-/ZZrCxxhZgf4ruIHm2Wx4WUYwLKNtUC3K+z07tJjVoBhNbkIPRBkNaVVDMfZL9jgxCYBgW1xLV8YU6crk8VriA==
   dependencies:
     "@babel/runtime" "^7.13.9"
     "@polkadot/api-derive" "4.1.1"
@@ -46,6 +47,7 @@
 "@polkadot/keyring@^6.0.5":
   version "6.0.5"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-6.0.5.tgz#b684f354476e96c657a7e8d3e5f0c090e1178b31"
+  integrity sha512-v9Tmu+eGZnWpLzxHUj5AIvmfX0uCHWShtF90zvaLvMXLFRWfeuaFnZwdZ+fNkXsrbI0R/w1gRtpFqzsT7QUbVw==
   dependencies:
     "@babel/runtime" "^7.13.9"
     "@polkadot/util" "6.0.5"
