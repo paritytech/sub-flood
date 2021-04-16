@@ -1,23 +1,11 @@
 stages:
   - build
-  - post-build
-  - post-merge
+  - test
+  - update-container-image-latest
   - cleanup
 
 variables:                         &global-vars
   FF_GITLAB_REGISTRY_HELPER_IMAGE:   'true'
-
-test-sub-flood-cli-can-run-simple-test:
-  variables:
-    <<:                            *global-vars
-  image:                           "paritytech/sub-flood:latest"
-  interruptible: true
-  stage: build
-  tags:
-    - parity-sub-flood
-  script:
-    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-substrate-external-tool-test.sh
-  retry: 2
 
 build-sub-flood-image-and-push-temporarly-in-paritypr:
   variables:
@@ -74,36 +62,52 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
   after_script:
     - podman logout docker.io
 
-test-sub-flood-image:
+test-latest-sub-flood-image-can-run-simple-test:
+  variables:
+    <<:                            *global-vars
+    IMAGE_UNDER_TEST:              "paritytech/sub-flood"
+    IMAGE_UNDER_TEST_TAG:          "latest"
+  image:                           "${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
+  interruptible: true
+  stage: build
+  tags:
+    - parity-sub-flood
+  script:
+    - echo "LOG INFO image under test ${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
+    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-substrate-external-tool-test.sh
+  retry: 2
+
+test-sub-flood-pr-container-image:
   variables:
     <<:                            *global-vars
   variables:
-    CONTAINER_IMAGE:               paritypr/sub-flood
-  image:                           "${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+    IMAGE_UNDER_TEST:              "paritypr/sub-flood"
+    IMAGE_UNDER_TEST_TAG:          "${CI_COMMIT_SHORT_SHA}" 
+  image:                           "${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
   interruptible:                   true
-  stage:                           post-build
+  stage:                           test
   tags:
     - parity-sub-flood
   needs:
     - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
   script:
-    - echo "LOG INFO step 6 test image ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA} "
+    - echo "LOG INFO image under test ${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
     - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-substrate-external-tool-test.sh
   retry: 2
 
-push-sub-flood-image-to-paritytech:
+update-latest-container-image:
   variables:
     <<:                            *global-vars
     UPSTREAM_BUILD_TRIGGER:        $BUILD_SUBFLOOD
-  stage:                           post-merge
+  stage:                           update-container-image-latest
   needs:
-    - job:                         test-sub-flood-image
+    - job:                         test-sub-flood-pr-container-image
   image:                           quay.io/buildah/stable
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
     - if: '$UPSTREAM_BUILD_TRIGGER == "true"'
   tags:
-    - parity-sub-flood-build
+    - parity-sub-flood
   before_script:
     - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
         ( echo "no docker credentials provided"; exit 1 )
@@ -113,7 +117,7 @@ push-sub-flood-image-to-paritytech:
         buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
     - buildah info
     - 'buildah pull "paritypr/sub-flood:$CI_COMMIT_SHORT_SHA"'
-    - 'buildah tag "paritypr/sub-flood:$CI_COMMIT_SHORT_SHA" paritytech/sub-flood:latest'
+    - 'buildah tag  "paritypr/sub-flood:$CI_COMMIT_SHORT_SHA" paritytech/sub-flood:latest'
     - 'buildah push --format=v2s2 paritytech/sub-flood:latest'
   after_script:
     - buildah logout docker.io
@@ -125,7 +129,7 @@ cleanup-temp-image-from-paritypr:
   image:                           'paritytech/sub-flood:latest'
   stage:                           'cleanup'
   needs:
-    - job:                         'push-sub-flood-image-to-paritytech'
+    - job:                         'update-latest-container-image'
   rules:
     - if:  $CI_COMMIT_BRANCH == "master"
     - if:  $UPSTREAM_BUILD_TRIGGER == "true"
@@ -136,7 +140,7 @@ cleanup-temp-image-from-paritypr:
         ( echo "no docker credentials provided"; exit 1 )
   script:
     - |
-      echo "LOG INFO step 8 Cleanup PR image"
+      echo "LOG INFO PR image"
       TOKEN=$(curl -s -H "Content-Type: application/json" \
                    -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\":
                    \"$DOCKER_SIMNET_PASS\" }" \
