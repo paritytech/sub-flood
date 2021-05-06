@@ -117,7 +117,7 @@ update-latest-container-image:
         buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
     - buildah info
     - 'buildah pull "docker.io/paritypr/sub-flood:$CI_COMMIT_SHORT_SHA"'
-    - 'buildah tag  "docker.io/paritypr/sub-flood:$CI_COMMIT_SHORT_SHA" paritytech/sub-flood:latest'
+    - 'buildah tag  "docker.io/paritypr/sub-flood:$CI_COMMIT_SHORT_SHA" docker.io/paritytech/sub-flood:latest'
     - 'buildah push --format=v2s2 docker.io/paritytech/sub-flood:latest'
   after_script:
     - buildah logout docker.io
