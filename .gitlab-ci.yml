@@ -10,7 +10,7 @@ variables:                         &global-vars
 build-sub-flood-image-and-push-temporarly-in-paritypr:
   variables:
     <<:                            *global-vars
-  image:                           quay.io/podman/stable
+  image:                           quay.io/buildah/stable
   tags:
     - parity-sub-flood-build
   variables:
@@ -24,26 +24,26 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
     - |
       echo "LOG INFO step 4 build container image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
       echo "$DOCKER_SIMNET_PASS" \
-           | podman login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
+           | buildah login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
       whoami
-      podman info
+      buildah info
       df -h | grep /var/lib/containers
-      time podman run \
-        --volume .:/build  \
-        --volume /var/lib/containers/:/var/lib/containers \
-        --device /dev/fuse \
-        --privileged   \
-        quay.io/buildah/stable \
-            buildah bud  \
+      # time buildah run \
+      #   --volume .:/build  \
+      #   --volume /var/lib/containers/:/var/lib/containers \
+      #   --device /dev/fuse \
+      #   --privileged   \
+      #   quay.io/buildah/stable \
+      buildah bud  \
               --layers=true  \
               --cache-from  "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-              --tag         "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-              /build 
+              --tag         "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" 
+      #         /build 
       echo "LOG INFO step 5 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA built successfully"
       echo "$DOCKER_SIMNET_PASS" \
-           | podman  login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
+           | buildah  login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
 
-      podman push --format=v2s2 "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
+      buildah push --format=v2s2 "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
       echo "LOG INFO step 6 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA pushed successfully"
 
       echo "LOG check if need to cleanup dangling images"
@@ -54,13 +54,13 @@ build-sub-flood-image-and-push-temporarly-in-paritypr:
 
       if test "$CACHE_USE_PERCENT" -ge 80 ; then 
         echo "LOG INFO need to cleanup cache, value: $CACHE_USE_PERCENT"
-        time podman rmi -f $(podman images -q -f "dangling=true")
+        time buildah rmi -f $(buildah images -q -f "dangling=true")
       else 
         echo "LOG INFO No Cleanup needed this time value: $CACHE_USE_PERCENT"
       fi
   retry: 1
   after_script:
-    - podman logout docker.io
+    - buildah logout docker.io
 
 test-latest-sub-flood-image-can-run-simple-test:
   variables:
