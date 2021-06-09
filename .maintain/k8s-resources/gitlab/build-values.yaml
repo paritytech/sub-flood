@@ -30,7 +30,6 @@ gitlabUrl: https://gitlab.parity.io/
 #
 # runnerRegistrationToken: ""
 # gurke
-runnerRegistrationToken: "zQw3hWgLhMqXXbM7Q7Hj"
 
 ## The Runner Token for adding new Runners to the GitLab Server. This must
 ## be retrieved from your GitLab Instance. It is token of already registered runner.
