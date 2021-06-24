@@ -4,18 +4,11 @@ stages:
 trigger-simnet-for-build-and-test:
   stage:                     build-test
   variables: 
+    TRGR_PROJECT:            "${CI_PROJECT_NAME}"
     # The branch or tag name for which project is built. 
     TRGR_REF:                "${CI_COMMIT_REF_NAME}"
-  image:                     "docker.io/paritytech/tools:latest"
-  script:
-    - echo 'TRGR_REF is ${TRGR_REF}'
-    - ./scripts/trigger_pipeline.sh
-        --simnet-version=master
-        --upstream-project=sub-flood
-        --upstream-ref="${TRGR_REF}"
-        --downstream-id=332
-        --image-name=""
-        --image-tag=""
-  tags:
-    - parity-sub-flood
+  trigger:
+    project:                  parity/simnet 
+    branch:                   master
+    strategy:                 depend
 
