@@ -1,152 +1,21 @@
 stages:
-  - build
-  - test
-  - update-container-image-latest
-  - cleanup
+    - build-test
 
-variables:                         &global-vars
-  FF_GITLAB_REGISTRY_HELPER_IMAGE:   'true'
-
-build-sub-flood-image-and-push-temporarly-in-paritypr:
-  variables:
-    <<:                            *global-vars
-  image:                           quay.io/podman/stable
-  tags:
-    - parity-sub-flood-build
-  variables:
-    # random name to replace sub-flood until we will have private docker repo 
-    CONTAINER_IMAGE:               paritypr/sub-flood
-  stage:                           build
-  before_script:
-    - test "$DOCKER_SIMNET_USER" -a "$DOCKER_SIMNET_PASS" ||
-        ( echo "No docker credentials provided"; exit 1 )
+trigger-simnet-for-build-and-test:
+  stage:                     build-test
+  variables: 
+    # The branch or tag name for which project is built. 
+    TRGR_REF:                "${CI_COMMIT_REF_NAME}"
+  image:                     "docker.io/paritytech/tools:latest"
   script:
-    - |
-      echo "LOG INFO step 4 build container image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
-      echo "$DOCKER_SIMNET_PASS" \
-           | podman login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
-      whoami
-      podman info
-      df -h | grep /var/lib/containers
-      time podman run \
-        --volume .:/build  \
-        --volume /var/lib/containers/:/var/lib/containers \
-        --device /dev/fuse \
-        --privileged   \
-        quay.io/buildah/stable \
-            buildah bud  \
-              --layers=true  \
-              --cache-from  "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-              --tag         "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA" \
-              /build 
-      echo "LOG INFO step 5 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA built successfully"
-      echo "$DOCKER_SIMNET_PASS" \
-           | podman  login --username "$DOCKER_SIMNET_USER" --password-stdin docker.io
-
-      podman push --format=v2s2 "$CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA"
-      echo "LOG INFO step 6 image $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA pushed successfully"
-
-      echo "LOG check if need to cleanup dangling images"
-      df -h | grep /var/lib/containers
-      CACHE_USE_PERCENT="$(df -h | grep -vE '/var/lib/containers/.*' | grep /var/lib/containers | awk '{print $5}' | sed 's/%//g')"
-      test -n "$CACHE_USE_PERCENT" \
-              || ( echo "This variable can't be emtpy" ; exit 1 )
-
-      if test "$CACHE_USE_PERCENT" -ge 80 ; then 
-        echo "LOG INFO need to cleanup cache, value: $CACHE_USE_PERCENT"
-        time podman rmi -f $(podman images -q -f "dangling=true")
-      else 
-        echo "LOG INFO No Cleanup needed this time value: $CACHE_USE_PERCENT"
-      fi
-  retry: 1
-  after_script:
-    - podman logout docker.io
-
-test-latest-sub-flood-image-can-run-simple-test:
-  variables:
-    <<:                            *global-vars
-    IMAGE_UNDER_TEST:              "paritytech/sub-flood"
-    IMAGE_UNDER_TEST_TAG:          "latest"
-  image:                           "${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
-  interruptible: true
-  stage: build
+    - echo 'TRGR_REF is ${TRGR_REF}'
+    - ./scripts/trigger_pipeline.sh
+        --simnet-version=master
+        --upstream-project=sub-flood
+        --upstream-ref="${TRGR_REF}"
+        --downstream-id=332
+        --image-name=""
+        --image-tag=""
   tags:
     - parity-sub-flood
-  script:
-    - echo "LOG INFO image under test ${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
-    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-substrate-external-tool-test.sh
-  retry: 2
 
-test-sub-flood-pr-container-image:
-  variables:
-    <<:                            *global-vars
-  variables:
-    IMAGE_UNDER_TEST:              "paritypr/sub-flood"
-    IMAGE_UNDER_TEST_TAG:          "${CI_COMMIT_SHORT_SHA}" 
-  image:                           "${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
-  interruptible:                   true
-  stage:                           test
-  tags:
-    - parity-sub-flood
-  needs:
-    - job:                         build-sub-flood-image-and-push-temporarly-in-paritypr
-  script:
-    - echo "LOG INFO image under test ${IMAGE_UNDER_TEST}:${IMAGE_UNDER_TEST_TAG}"
-    - /home/nonroot/gurke/scripts/run-test-environment-manager.sh -t run-substrate-external-tool-test.sh
-  retry: 2
-
-update-latest-container-image:
-  variables:
-    <<:                            *global-vars
-    UPSTREAM_BUILD_TRIGGER:        $BUILD_SUBFLOOD
-  stage:                           update-container-image-latest
-  needs:
-    - job:                         test-sub-flood-pr-container-image
-  image:                           quay.io/buildah/stable
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$UPSTREAM_BUILD_TRIGGER == "true"'
-  tags:
-    - parity-sub-flood
-  before_script:
-    - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
-        ( echo "no docker credentials provided"; exit 1 )
-  script:
-    - echo "LOG INFO step 7 update paritytech/pickle_rick:latest"
-    - echo "$Docker_Hub_Pass_Parity" |
-        buildah login --username "$Docker_Hub_User_Parity" --password-stdin docker.io
-    - buildah info
-    - 'buildah pull "paritypr/sub-flood:$CI_COMMIT_SHORT_SHA"'
-    - 'buildah tag  "paritypr/sub-flood:$CI_COMMIT_SHORT_SHA" paritytech/sub-flood:latest'
-    - 'buildah push --format=v2s2 paritytech/sub-flood:latest'
-  after_script:
-    - buildah logout docker.io
-
-cleanup-temp-image-from-paritypr:
-  variables:
-    <<:                            *global-vars
-    UPSTREAM_BUILD_TRIGGER:        $BUILD_SUBFLOOD
-  image:                           'paritytech/sub-flood:latest'
-  stage:                           'cleanup'
-  needs:
-    - job:                         'update-latest-container-image'
-  rules:
-    - if:  $CI_COMMIT_BRANCH == "master"
-    - if:  $UPSTREAM_BUILD_TRIGGER == "true"
-  tags:
-    - parity-sub-flood
-  before_script:
-    - test "$Docker_Hub_User_Parity" -a "$Docker_Hub_Pass_Parity" ||
-        ( echo "no docker credentials provided"; exit 1 )
-  script:
-    - |
-      echo "LOG INFO PR image"
-      TOKEN=$(curl -s -H "Content-Type: application/json" \
-                   -X POST -d "{ \"username\": \"$DOCKER_SIMNET_USER\", \"password\":
-                   \"$DOCKER_SIMNET_PASS\" }" \
-                   "https://hub.docker.com/v2/users/login/" \
-                  | jq -r .token)
-
-      curl -i -X DELETE \
-           -H "Authorization: JWT $TOKEN" \
-           "https://hub.docker.com/v2/repositories/paritypr/sub-flood/tags/$CI_COMMIT_SHORT_SHA/"
