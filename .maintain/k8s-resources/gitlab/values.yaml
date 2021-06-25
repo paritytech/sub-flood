@@ -30,7 +30,6 @@ gitlabUrl: https://gitlab.parity.io/
 #
 # runnerRegistrationToken: ""
 # gurke
-runnerRegistrationToken: "zQw3hWgLhMqXXbM7Q7Hj"
 
 ## The Runner Token for adding new Runners to the GitLab Server. This must
 ## be retrieved from your GitLab Instance. It is token of already registered runner.
@@ -120,7 +119,7 @@ rbac:
   podSecurityPolicy:
     enabled: false
     resourceNames:
-    - sub-flood-gitlab-runner
+    - sub-flood
 
   ## Specify one or more imagePullSecrets used for pulling the runner image
   ##
@@ -141,13 +140,6 @@ runners:
       [runners.kubernetes]
         image = "ubuntu:16.04"
         pull_policy = "always"
-        [[runners.kubernetes.volumes.secret]]
-          name = "gurke-service-json-key"
-          mount_path = "/etc/gurke/"
-          read_only = true
-          [runners.kubernetes.volumes.secret.items]
-            "gurke-service-json-key" = "gurke-service-key.json"
-
 
   ## Default container image to use for builds when none is specified
   ##
