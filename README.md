@@ -35,4 +35,3 @@ Script may also try to wait for all sent transactions' finalization (see corresp
 - `finalization_timeout` - amount of time to wait in every attempt, default is 20000 (in ms); screen makes several attempts, so the total waiting time is finalization_timeout * finalization_attempts
 - `finalization_attempts` - amount of waiting attempts, default is 5
 
-
