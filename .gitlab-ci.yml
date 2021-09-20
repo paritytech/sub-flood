@@ -9,8 +9,6 @@ trigger-simnet-for-build-and-test:
     TRGR_REF:                "${CI_COMMIT_REF_NAME}"
   trigger:
     project:                  parity/simnet 
-    branch:                   radu-make-submodule-pr-work
-    # FIXIME switchback to maste
-    # branch:                   master
+    branch:                   master
     strategy:                 depend
 
