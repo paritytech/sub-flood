@@ -34,3 +34,4 @@ Script may also try to wait for all sent transactions' finalization (see corresp
 - `finalization_attempts` - amount of waiting attempts, default is 5
 
 
+
