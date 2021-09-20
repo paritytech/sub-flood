@@ -6,11 +6,9 @@ To run:
 ```
 # This will generate dist dir which is needed in order for the script to run
 npm run build 
-
 # If you would like to use this script with a network simulation tool like 
 # "gurke" create a symlink of index.js of this package in a general purpose dir path
 ln -s "$(pwd)"/dist/index.js /usr/local/bin/sub-flood
-
 # Run script with
 node dist/index.js
 ```
